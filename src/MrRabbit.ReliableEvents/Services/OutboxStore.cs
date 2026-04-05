@@ -5,7 +5,7 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
     private readonly IHandlerMetadataProvider<TDbContext> _handlerMetadataProvider;
     private readonly IOutboxTaskFactory _outboxTaskFactory;
     private readonly IUnitOfWork<TDbContext> _unitOfWork;
-
+    private readonly List<Guid> _attachedEventIds = [];
     public OutboxStore(IHandlerMetadataProvider<TDbContext> handlerMetadataProvider, IOutboxTaskFactory outboxTaskFactory, IUnitOfWork<TDbContext> unitOfWork)
     {
         _handlerMetadataProvider = handlerMetadataProvider;
@@ -15,6 +15,7 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
 
     public IEnumerable<OutboxQueue> AttachEvent(object @event, Guid? eventId, DateTime occurredDate)
     {
+        ValidateEventId(eventId);
         var handlersMetadata = _handlerMetadataProvider.GetHandlersMetadata(@event);
         var outboxTasks = _outboxTaskFactory.Create(handlersMetadata, @event, eventId, occurredDate);
         _unitOfWork.Repository.AddRange(outboxTasks);
@@ -27,12 +28,23 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
         var queues = new List<OutboxQueue>();
         foreach (var @event in events)
         {
+            var eventId = guidFactory(@event);
+            ValidateEventId(eventId);
             var handlersMetadata = _handlerMetadataProvider.GetHandlersMetadata(@event);
-            var outboxTasks = _outboxTaskFactory.Create(handlersMetadata, @event, guidFactory(@event), occurredDateFactory(@event));
+            var outboxTasks = _outboxTaskFactory.Create(handlersMetadata, @event, eventId, occurredDateFactory(@event));
             _unitOfWork.Repository.AddRange(outboxTasks);
             queues.AddRange(handlersMetadata.Select(x => x.Queue));
         }
 
         return queues.Distinct();
+    }
+
+    private void ValidateEventId(Guid? eventId)
+    {
+        if (eventId is null)
+            return;
+        if (_attachedEventIds.Contains(eventId.Value))
+            throw new InvalidOperationException($"Event with id '{eventId}' is already attached.");
+        _attachedEventIds.Add(eventId.Value);
     }
 }

@@ -438,12 +438,20 @@ services.AddReliableEvents<AppDbContext>(options =>
 });
 ```
 
-#### `ModelBuilder.AddReliableEvents()`
+#### `ModelBuilder.AddReliableEvents(bool createEventIdIndex = true)`
 
 Applies the `OutboxTask` entity configuration to your EF Core model.
 
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `createEventIdIndex` | `bool` | `true` | When `true`, creates a unique index on the `EventId` column for external event deduplication. Set to `false` if you don't use `EventId` or want to configure the index manually. |
+
 ```csharp
+// Default — creates the EventId unique index
 modelBuilder.AddReliableEvents();
+
+// Opt out of the automatic EventId index
+modelBuilder.AddReliableEvents(createEventIdIndex: false);
 ```
 
 ### Interfaces
@@ -515,7 +523,7 @@ The main entry point, providing access to all three subsystems:
 
 ### `OutboxTask` Entity
 
-Persisted to your database via EF Core. Indexed on `(QueueName, IsDispatched, OccurredDate)`.
+Persisted to your database via EF Core. Indexed on `(QueueName, IsDispatched, OccurredDate)` and with a **unique index** on `EventId`.
 
 | Column | Type | Description |
 |---|---|---|
@@ -552,6 +560,43 @@ outboxStore.AttachEvent(incomingEvent, eventId: incomingEvent.ExternalId, occurr
 |---|---|---|
 | `null` | Task is **deleted** | Events raised internally by your application |
 | `Guid` | Task is **marked as dispatched** | Events received from external systems that may retry |
+
+#### Unique Index on `EventId` and NULL Handling
+
+By default, the library configures a **unique index** on the `EventId` column to enforce deduplication at the database level:
+
+```csharp
+builder.HasIndex(x => x.EventId).IsUnique();
+```
+
+This prevents inserting two outbox tasks with the same non-null `EventId`, ensuring that duplicate external events are rejected by the database even in race conditions.
+
+If you don't use `EventId` for external event deduplication, or if you need full control over the index configuration, you can disable automatic index creation:
+
+```csharp
+modelBuilder.AddReliableEvents(createEventIdIndex: false);
+```
+
+However, since `EventId` is nullable (`Guid?`) — and most internally raised events pass `null` — the outbox table will contain **many rows where `EventId` is `NULL`**. The behavior of a unique index with multiple `NULL` values **differs across database providers**:
+
+| Database Provider | Multiple NULLs in Unique Index | Notes |
+|---|---|---|
+| **SQL Server** | ✅ Allowed (with filter) | EF Core automatically generates a **filtered index** (`WHERE [EventId] IS NOT NULL`), allowing multiple rows with `NULL`. No action needed. |
+| **PostgreSQL** | ✅ Allowed natively | Per the SQL standard, `NULL` values are treated as **distinct** — multiple `NULL`s are permitted in a unique index by default. |
+| **SQLite** | ✅ Allowed natively | SQLite treats `NULL` values as distinct for uniqueness purposes. |
+| **MySQL / MariaDB** | ✅ Allowed natively | `NULL` values are considered distinct and do not violate unique constraints. |
+
+> **⚠️ Important:** If you are using a **database provider not listed above**, verify that it supports multiple `NULL` values in a unique index. If it does not (i.e., it treats all `NULL`s as equal), `SaveChanges` will throw a unique constraint violation when persisting the second internal event with `eventId: null`. In that case, you may need to apply a custom index filter via `OnModelCreating`:
+>
+> ```csharp
+> modelBuilder.Entity<OutboxTask>(entity =>
+> {
+>     // Override the default unique index with a filtered one
+>     entity.HasIndex(x => x.EventId)
+>         .IsUnique()
+>         .HasFilter("[EventId] IS NOT NULL"); // Adjust syntax for your provider
+> });
+> ```
 
 ### Queue Isolation & Concurrency
 
