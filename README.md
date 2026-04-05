@@ -1,8 +1,7 @@
 <p align="center">
   <h1 align="center">ReliableEvents</h1>
   <p align="center">
-    A lightweight, in memory event dispatcher and  transactional outbox pattern implementation for .NET — guaranteeing reliable domain event delivery with Entity Framework Core.
-
+    A lightweight, in memory event dispatcher and transactional outbox pattern implementation for .NET — guaranteeing reliable domain event delivery with Entity Framework Core.
   </p>
 </p>
 
@@ -19,7 +18,7 @@
 
 ## Overview
 
-**MrRabbit.ReliableEvents** solves the dual-write problem in distributed systems. When your application needs to persist state *and* publish events, traditional approaches risk data inconsistency — the database commits but the event is lost, or vice versa.
+**ReliableEvents** solves the dual-write problem in distributed systems. When your application needs to persist state *and* publish events, traditional approaches risk data inconsistency — the database commits but the event is lost, or vice versa.
 
 This library implements the **Transactional Outbox Pattern**: events are serialized and stored in the same database transaction as your domain state, then dispatched asynchronously by a dedicated worker. This guarantees **at-least-once delivery** with zero external dependencies beyond your existing EF Core database.
 
