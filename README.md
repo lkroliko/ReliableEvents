@@ -32,7 +32,7 @@ This library implements the **Transactional Outbox Pattern**: events are seriali
 - ⚡ **In-memory dispatcher** — lightweight, synchronous event dispatch for in-process handlers
 - 🔀 **Named queues** — isolate event processing across independent queues with `[EventHandlerQueue]`
 - 🛡️ **Concurrency control** — per-queue semaphores prevent duplicate processing
-- 📦 **Idempotency support** — optional `EventId` tracking to mark events as dispatched instead of deleting
+- 📦 **External event deduplication** — optional `EventId` to detect and skip duplicate events received from external systems (e.g. SignalR, webhooks)
 - 🧩 **Minimal setup** — single `AddReliableEvents<TDbContext>()` call with a fluent builder API
 - 🎯 **Convention-based registration** — auto-discover handlers from assemblies
 
@@ -145,7 +145,7 @@ public class OrderService
         // Attach outbox events (persisted with SaveChanges)
         var queues = _events.OutboxStore.AttachEvent(
             new OrderConfirmed { OrderId = order.Id, ConfirmedAt = DateTime.UtcNow },
-            eventId: order.Id,
+            eventId: null,
             occurredDate: DateTime.UtcNow);
 
         await _dbContext.SaveChangesAsync(ct);
@@ -236,7 +236,6 @@ public interface IIntegrationEvent;
 ```csharp
 public abstract class DomainEvent
 {
-    public Guid EventId { get; } = Guid.NewGuid();
     public DateTime OccurredDate { get; } = DateTime.UtcNow;
 }
 ```
@@ -320,7 +319,7 @@ public class AppDbContext : DbContext
         var integrationEvents = domainEvents.Where(e => e is IIntegrationEvent).ToList();
 
         // Attach integration events to the outbox (persisted with this SaveChanges call)
-        var queues = reliableEvents.OutboxStore.AttachEvents(integrationEvents, e => e.EventId, e => e.OccurredDate);
+        var queues = reliableEvents.OutboxStore.AttachEvents(integrationEvents, _ => null, e => e.OccurredDate);
 
         // Dispatch in-memory domain events
         await reliableEvents.Dispatcher.DispatchAsync(inMemoryEvents, cancellationToken);
@@ -522,7 +521,7 @@ Persisted to your database via EF Core. Indexed on `(QueueName, IsDispatched, Oc
 |---|---|---|
 | `Id` | `Guid` | Primary key |
 | `QueueName` | `string` | Queue this task belongs to |
-| `EventId` | `Guid?` | Optional business event ID for idempotency |
+| `EventId` | `Guid?` | Optional external event ID for deduplication (see [EventId & External Event Deduplication](#eventid--external-event-deduplication)) |
 | `HandlerFullName` | `string` | Fully qualified handler type name |
 | `HandlerAssemblyName` | `string` | Handler assembly name |
 | `EventFullName` | `string` | Fully qualified event type name |
@@ -533,17 +532,26 @@ Persisted to your database via EF Core. Indexed on `(QueueName, IsDispatched, Oc
 
 ## Key Concepts
 
-### Idempotency via EventId
+### EventId & External Event Deduplication
 
-When you provide an `EventId`, dispatched tasks are **marked as dispatched** rather than deleted. This enables idempotency checks and audit trails:
+Idempotency for events raised **within your application** is already guaranteed by the database transaction — the event and your domain state are persisted atomically, so there is no risk of duplicates. In this case, pass `eventId: null`:
 
 ```csharp
-// With EventId — task marked as dispatched after processing
-outboxStore.AttachEvent(myEvent, eventId: Guid.NewGuid(), occurredDate: DateTime.UtcNow);
-
-// Without EventId — task deleted after processing
+// Internal event — no EventId needed, transaction guarantees idempotency
 outboxStore.AttachEvent(myEvent, eventId: null, occurredDate: DateTime.UtcNow);
 ```
+
+`EventId` is useful when the event originates from an **external system** (e.g. a webhook, SignalR message, or an HTTP endpoint) and may arrive multiple times due to IO errors or retries. By providing the external system's unique identifier as `EventId`, the outbox task is **marked as dispatched** rather than deleted after processing. This allows the library to detect and skip duplicates if the same external event is received again:
+
+```csharp
+// External event — use the external system's ID to prevent duplicate processing
+outboxStore.AttachEvent(incomingEvent, eventId: incomingEvent.ExternalId, occurredDate: DateTime.UtcNow);
+```
+
+| `EventId` value | After processing | Use case |
+|---|---|---|
+| `null` | Task is **deleted** | Events raised internally by your application |
+| `Guid` | Task is **marked as dispatched** | Events received from external systems that may retry |
 
 ### Queue Isolation & Concurrency
 
