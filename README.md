@@ -9,6 +9,7 @@
   <a href="#features">Features</a> •
   <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick Start</a> •
+  <a href="#ddd-integration">DDD Integration</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#api-reference">API Reference</a> •
   <a href="#license">License</a>
@@ -214,6 +215,157 @@ public class OutboxCleanupJob : BackgroundService
     }
 }
 ```
+
+## DDD Integration
+
+In Domain-Driven Design, domain events are raised within your aggregates and dispatched as part of the persistence lifecycle. ReliableEvents integrates naturally with this approach by intercepting `SaveChanges` in your `DbContext` to automatically:
+
+1. **Dispatch domain events** in-memory via `IDispatcher`
+2. **Persist integration events** to the outbox via `IOutboxStore` and dispatch them via `IOutboxDispatcher`
+
+Integration events are domain events marked with the `IIntegrationEvent` interface — they cross bounded context boundaries and require guaranteed delivery.
+
+### 1. Define the marker interface
+
+```csharp
+public interface IIntegrationEvent;
+```
+
+### 2. Define a base class for domain events
+
+```csharp
+public abstract class DomainEvent
+{
+    public Guid EventId { get; } = Guid.NewGuid();
+    public DateTime OccurredDate { get; } = DateTime.UtcNow;
+}
+```
+
+### 3. Define your domain events
+
+```csharp
+// In-memory only — handled within the same bounded context
+public class OrderPlaced : DomainEvent
+{
+    public Guid OrderId { get; init; }
+    public decimal Total { get; init; }
+}
+
+// Integration event — persisted to outbox, guaranteed delivery across boundaries
+public class OrderConfirmed : DomainEvent, IIntegrationEvent
+{
+    public Guid OrderId { get; init; }
+}
+```
+
+### 4. Collect events in your aggregate
+
+```csharp
+public abstract class AggregateRoot
+{
+    private readonly List<DomainEvent> _domainEvents = [];
+    public IReadOnlyList<DomainEvent> DomainEvents => _domainEvents;
+
+    protected void RaiseDomainEvent(DomainEvent @event) => _domainEvents.Add(@event);
+    public void ClearDomainEvents() => _domainEvents.Clear();
+}
+
+public class Order : AggregateRoot
+{
+    public Guid Id { get; private set; }
+    public decimal Total { get; private set; }
+
+    public static Order Place(Guid id, decimal total)
+    {
+        var order = new Order { Id = id, Total = total };
+        order.RaiseDomainEvent(new OrderPlaced { OrderId = id, Total = total });
+        return order;
+    }
+
+    public void Confirm()
+    {
+        RaiseDomainEvent(new OrderConfirmed { OrderId = Id });
+    }
+}
+```
+
+### 5. Override SaveChanges to dispatch events
+
+```csharp
+public class AppDbContext : DbContext
+{
+    public DbSet<Order> Orders => Set<Order>();
+
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.AddReliableEvents();
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var reliableEvents = this.GetService<IReliableEvents<AppDbContext>>();
+
+        var aggregates = ChangeTracker.Entries<AggregateRoot>()
+            .Where(e => e.Entity.DomainEvents.Count > 0)
+            .Select(e => e.Entity)
+            .ToList();
+
+        var domainEvents = aggregates.SelectMany(a => a.DomainEvents).ToList();
+
+        // Separate domain events from integration events
+        var inMemoryEvents = domainEvents.Where(e => e is not IIntegrationEvent).ToList();
+        var integrationEvents = domainEvents.Where(e => e is IIntegrationEvent).ToList();
+
+        // Attach integration events to the outbox (persisted with this SaveChanges call)
+        var queues = reliableEvents.OutboxStore.AttachEvents(integrationEvents, e => e.EventId, e => e.OccurredDate);
+
+        // Dispatch in-memory domain events
+        await reliableEvents.Dispatcher.DispatchAsync(inMemoryEvents, cancellationToken);
+
+        aggregates.ForEach(a => a.ClearDomainEvents());
+
+        var result = await base.SaveChangesAsync(cancellationToken);
+
+        // Dispatch outbox events after successful persistence
+        Task.Run(() => reliableEvents.OutboxDispatcher.DispatchAsync(queues)).ConfigureAwait(false);
+
+        return result;
+    }
+}
+```
+
+### 6. Use it — your application code stays clean
+
+```csharp
+public class OrderService
+{
+    private readonly AppDbContext _dbContext;
+
+    public OrderService(AppDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task PlaceAndConfirmAsync(Guid orderId, decimal total, CancellationToken ct)
+    {
+        var order = Order.Place(orderId, total);
+        order.Confirm();
+
+        _dbContext.Orders.Add(order);
+
+        // SaveChanges automatically:
+        // 1. Dispatches OrderPlaced in-memory
+        // 2. Persists OrderConfirmed to the outbox
+        // 3. Dispatches OrderConfirmed from the outbox
+        await _dbContext.SaveChangesAsync(ct);
+    }
+}
+```
+
+> **💡 Note:** Steps 6 and 7 from [Quick Start](#quick-start) (recurring dispatch job and cleanup of dispatched tasks) still apply — make sure to implement them.
 
 ## Architecture
 
