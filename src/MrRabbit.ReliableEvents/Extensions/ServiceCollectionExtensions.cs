@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISerializer, JsonSerializer>();
         services.AddSingleton(typeof(IHandlerMetadataProvider<TDbContext>), _ => new HandlerMetadataProvider<TDbContext>(optionsBuilder.OutboxHandlerTypes));
         services.AddSingleton<IOutboxDispatcherWorker, OutboxDispatcherWorker>();
-        services.AddScoped<IOutboxDispatcher<TDbContext>, OutboxDispatcher<TDbContext>>();
+        services.AddSingleton<IOutboxDispatcher<TDbContext>, OutboxDispatcher<TDbContext>>();
         services.AddScoped<IQueueOutboxDispatcher<TDbContext>, QueueOutboxDispatcher<TDbContext>>();
         services.AddScoped<IOutboxStore<TDbContext>, OutboxStore<TDbContext>>();
         services.AddSingleton<IOutboxTaskFactory, OutboxTaskFactory>();

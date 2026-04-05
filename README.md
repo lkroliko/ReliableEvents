@@ -155,6 +155,65 @@ public class OrderService
 }
 ```
 
+### 6. Implement a recurring dispatch job
+
+The library does **not** include a built-in background worker. You must implement a recurring task (e.g. using `IHostedService`, Hangfire, Quartz, or a simple timer) that periodically calls `DispatchAsync` on `IOutboxDispatcher<TDbContext>` to retry failed or unprocessed events:
+
+```csharp
+public class OutboxDispatcherJob : BackgroundService
+{
+    private readonly IOutboxDispatcher<AppDbContext> _outboxDispatcher;
+
+    public OutboxDispatcherJob(IOutboxDispatcher<AppDbContext> outboxDispatcher)
+    {
+        _outboxDispatcher = outboxDispatcher;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // Retry dispatching for all known queues
+            await _outboxDispatcher.DispatchAsync([new OutboxQueue("orders")]);
+
+            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+        }
+    }
+}
+```
+
+### 7. Implement cleanup of dispatched tasks
+
+Tasks with an `EventId` are marked as dispatched but **never deleted** by the library. You must implement a periodic cleanup job to remove old, already-processed records and prevent the outbox table from growing indefinitely:
+
+```csharp
+public class OutboxCleanupJob : BackgroundService
+{
+    private readonly IServiceProvider _serviceProvider;
+
+    public OutboxCleanupJob(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            var cutoff = DateTime.UtcNow.AddDays(-7);
+            await dbContext.Set<OutboxTask>()
+                .Where(t => t.IsDispatched && t.OccurredDate < cutoff)
+                .ExecuteDeleteAsync(stoppingToken);
+
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+        }
+    }
+}
+```
+
 ## Architecture
 
 ```
@@ -181,7 +240,7 @@ public class OrderService
 | **ReliableEvents** | `IReliableEvents<TDbContext>` | Scoped | The main entry point — aggregates `IDispatcher`, `IOutboxStore`, and `IOutboxDispatcher` into a single injectable service. |
 | **Dispatcher** | `IDispatcher` | Singleton | Resolves and invokes all `IEventHandler<T>` implementations for a given set of events in-memory. |
 | **Outbox Store** | `IOutboxStore<TDbContext>` | Scoped | Serializes events and attaches them as `OutboxTask` entities to the current EF Core change tracker. Events are committed with your `SaveChanges` call. |
-| **Outbox Dispatcher** | `IOutboxDispatcher<TDbContext>` | Scoped | Processes all queues in parallel. Each queue is processed sequentially (oldest-first) with per-queue semaphore locking. |
+| **Outbox Dispatcher** | `IOutboxDispatcher<TDbContext>` | Singleton | Processes all queues in parallel. Each queue is processed sequentially (oldest-first) with per-queue semaphore locking. |
 
 ### Event Lifecycle
 
