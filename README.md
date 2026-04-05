@@ -495,8 +495,8 @@ The main entry point, providing access to all three subsystems:
 
 | Method | Description |
 |---|---|
-| `AttachEvent(object, Guid?, DateTime)` | Attaches a single event to the outbox. Returns affected `OutboxQueue`s. |
-| `AttachEvents<T>(IEnumerable<T>, Func<T,Guid?>, Func<T,DateTime>)` | Attaches multiple events with custom ID and timestamp factories. |
+| `AttachEvent(object, string?, DateTime)` | Attaches a single event to the outbox. Returns affected `OutboxQueue`s. |
+| `AttachEvents<T>(IEnumerable<T>, Func<T,string?>, Func<T,DateTime>)` | Attaches multiple events with custom ID and timestamp factories. |
 
 ### `IOutboxDispatcher<TDbContext>`
 
@@ -521,7 +521,7 @@ Persisted to your database via EF Core. Indexed on `(QueueName, IsDispatched, Oc
 |---|---|---|
 | `Id` | `Guid` | Primary key |
 | `QueueName` | `string` | Queue this task belongs to |
-| `EventId` | `Guid?` | Optional external event ID for deduplication (see [EventId & External Event Deduplication](#eventid--external-event-deduplication)) |
+| `EventId` | `string?` | Optional external event ID for deduplication (see [EventId & External Event Deduplication](#eventid--external-event-deduplication)) |
 | `HandlerFullName` | `string` | Fully qualified handler type name |
 | `HandlerAssemblyName` | `string` | Handler assembly name |
 | `EventFullName` | `string` | Fully qualified event type name |

@@ -23,12 +23,12 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
         return handlersMetadata.Select(x => x.Queue).Distinct();
     }
 
-    public IEnumerable<OutboxQueue> AttachEvents<TEvent>(IEnumerable<TEvent> events, Func<TEvent, string?> guidFactory, Func<TEvent, DateTime> occurredDateFactory)
+    public IEnumerable<OutboxQueue> AttachEvents<TEvent>(IEnumerable<TEvent> events, Func<TEvent, string?> eventIdFactory, Func<TEvent, DateTime> occurredDateFactory)
     {
         var queues = new List<OutboxQueue>();
         foreach (var @event in events)
         {
-            var eventId = guidFactory(@event);
+            var eventId = eventIdFactory(@event);
             ValidateEventId(eventId);
             var handlersMetadata = _handlerMetadataProvider.GetHandlersMetadata(@event);
             var outboxTasks = _outboxTaskFactory.Create(handlersMetadata, @event, eventId, occurredDateFactory(@event));
