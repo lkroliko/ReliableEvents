@@ -349,6 +349,12 @@ public class PaymentHandler : IOutboxEventHandler<PaymentEvent> { ... }
 public class NotificationHandler : IOutboxEventHandler<NotificationEvent> { ... }
 ```
 
+### Error Handling & Queue Blocking
+
+If an `IOutboxEventHandler<T>` throws an exception, the **entire queue stops processing**. The failing task is **not** marked as dispatched, so it remains at the head of the queue. The `DispatchResult` returned for that queue will have `IsFailed = true` with the captured `Exception`. Subsequent calls to `DispatchAsync` will retry the same task, effectively blocking the queue until the issue is resolved.
+
+> **💡 Tip:** Since a failing handler blocks all subsequent tasks in the same queue, keep handler logic resilient (e.g. wrap external calls in try/catch with logging) or isolate critical handlers into separate queues so a failure in one does not stall others.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
