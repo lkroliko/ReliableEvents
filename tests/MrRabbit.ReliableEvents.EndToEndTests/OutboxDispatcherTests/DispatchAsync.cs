@@ -43,11 +43,14 @@ public class DispatchAsync : ReliableEventsTestBase
         var dbContext = scope.ServiceProvider.GetDbContext();
         dbContext.SaveChanges();
 
-        _ = Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken);
-        _ = Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken);
-        _ = Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken);
+        var tasks = new[]
+        {
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken),
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken),
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken)
+        };
 
-        await Task.Delay(500, _cancellationToken);
+        await Task.WhenAll(tasks);
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<TestOutboxEvent>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -63,7 +66,8 @@ public class DispatchAsync : ReliableEventsTestBase
         var dbContext = scope.ServiceProvider.GetDbContext();
         dbContext.SaveChanges();
 
-        var tasks = new[] {
+        var tasks = new[]
+        {
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken),
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken),
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken)
