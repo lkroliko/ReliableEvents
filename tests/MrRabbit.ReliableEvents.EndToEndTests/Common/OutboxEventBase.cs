@@ -2,6 +2,6 @@
 
 internal abstract class OutboxEventBase
 {
-    internal required Guid? EventId { get; init; }
+    internal string EventId { get; } = A.Fixture.Create<string>();
     internal required DateTime OccurredDate { get; init; }
 }

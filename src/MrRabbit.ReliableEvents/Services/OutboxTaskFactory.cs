@@ -9,7 +9,7 @@ internal class OutboxTaskFactory : IOutboxTaskFactory
         _eventSerializer = serializer;
     }
 
-    public IEnumerable<OutboxTask> Create(IEnumerable<HandlerMetadata> handlersMetadata, object @event, Guid? eventId, DateTime occurredDate)
+    public IEnumerable<OutboxTask> Create(IEnumerable<HandlerMetadata> handlersMetadata, object @event, string? eventId, DateTime occurredDate)
     {
         var serializedEvent = _eventSerializer.Serialize(@event);
         var eventType = @event.GetType();

@@ -2,5 +2,5 @@
 
 internal interface IOutboxTaskFactory
 {
-    IEnumerable<OutboxTask> Create(IEnumerable<HandlerMetadata> handlersMetadata, object @event, Guid? eventId, DateTime occurredDate);
+    IEnumerable<OutboxTask> Create(IEnumerable<HandlerMetadata> handlersMetadata, object @event, string? eventId, DateTime occurredDate);
 }

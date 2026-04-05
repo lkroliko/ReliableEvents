@@ -4,7 +4,6 @@
 public class AttachEvent : ReliableEventsTestBase
 {
     private readonly TestOutboxEvent _event = A.Fixture.Create<TestOutboxEvent>();
-    private readonly Guid _eventId = A.Fixture.Create<Guid>();
 
     [Fact]
     public void WhenDispatchThenHandlersHandleAsyncCalled()
@@ -34,9 +33,9 @@ public class AttachEvent : ReliableEventsTestBase
     {
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _eventId, _event.OccurredDate);
+        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
 
-        var result = Record.Exception(() => eventingServicing.OutboxStore.AttachEvent(_event, _eventId, _event.OccurredDate));
+        var result = Record.Exception(() => eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate));
 
         result.Should().NotBeNull();
         result.Should().BeOfType<InvalidOperationException>();
@@ -47,13 +46,16 @@ public class AttachEvent : ReliableEventsTestBase
     {
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _eventId, _event.OccurredDate);
+        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
         var dbContext = scope.ServiceProvider.GetDbContext();
         dbContext.SaveChanges();
 
-        eventingServicing.OutboxStore.AttachEvent(_event, _eventId, _event.OccurredDate);
+        using var scope2 = Services.CreateScope();
+        eventingServicing = scope2.ServiceProvider.GetEventingService();
+        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
+        dbContext = scope2.ServiceProvider.GetDbContext();
         dbContext.SaveChanges();
 
-        dbContext.Set<OutboxTask>().Single().EventId.Should().Be(_eventId);
+        dbContext.Set<OutboxTask>().Single().EventId.Should().Be(_event.EventId);
     }
 }
