@@ -7,7 +7,7 @@ internal class TestConsts
         internal class Test
         {
             internal const string Name = "TestQueue";
-            internal static readonly Queue Queue = new Queue(Name);
+            internal static readonly OutboxQueue Queue = new OutboxQueue(Name);
         }
     }
 

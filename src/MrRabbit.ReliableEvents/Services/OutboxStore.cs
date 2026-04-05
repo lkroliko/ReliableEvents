@@ -13,7 +13,7 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
         _unitOfWork = unitOfWork;
     }
 
-    public IEnumerable<Queue> AttachEvent(object @event, Guid? eventId, DateTime occurredDate)
+    public IEnumerable<OutboxQueue> AttachEvent(object @event, Guid? eventId, DateTime occurredDate)
     {
         var handlersMetadata = _handlerMetadataProvider.GetHandlersMetadata(@event);
         var outboxTasks = _outboxTaskFactory.Create(handlersMetadata, @event, eventId, occurredDate);
@@ -22,9 +22,9 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
         return handlersMetadata.Select(x => x.Queue).Distinct();
     }
 
-    public IEnumerable<Queue> AttachEvents<TEvent>(IEnumerable<TEvent> events, Func<TEvent, Guid?> guidFactory, Func<TEvent, DateTime> occurredDateFactory)
+    public IEnumerable<OutboxQueue> AttachEvents<TEvent>(IEnumerable<TEvent> events, Func<TEvent, Guid?> guidFactory, Func<TEvent, DateTime> occurredDateFactory)
     {
-        var queues = new List<Queue>();
+        var queues = new List<OutboxQueue>();
         foreach (var @event in events)
         {
             var handlersMetadata = _handlerMetadataProvider.GetHandlersMetadata(@event);

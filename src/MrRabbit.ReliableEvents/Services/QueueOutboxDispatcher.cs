@@ -5,31 +5,52 @@ namespace MrRabbit.ReliableEvents.Services;
 internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbContext> where TDbContext : DbContext
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IOutboxQueueSemaphoreProvider<TDbContext> _semaphoreProvider;
 
-    public QueueOutboxDispatcher(IServiceProvider serviceProvider)
+    public QueueOutboxDispatcher(IServiceProvider serviceProvider, IOutboxQueueSemaphoreProvider<TDbContext> SemaphoreProvider)
     {
         _serviceProvider = serviceProvider;
+        _semaphoreProvider = SemaphoreProvider;
     }
 
-    public async Task DispatchAsync(Queue queue, CancellationToken cancellationToken)
+    public async Task<DispatchResult> DispatchAsync(OutboxQueue queue, CancellationToken cancellationToken)
     {
-        while (true)
+        var semapthore = _semaphoreProvider.Get(queue);
+        await semapthore.WaitAsync(cancellationToken);
+        try
         {
-            using var scope = _serviceProvider.CreateScope();
-            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork<TDbContext>>();
-            var outboxTask = await unitOfWork.Repository.GetOldestOutboxTaskAsync(queue);
-            if (outboxTask is null)
-                break;
+            while (true)
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork<TDbContext>>();
+                var outboxTask = await unitOfWork.Repository.GetOldestOutboxTaskAsync(queue);
+                if (outboxTask is null)
+                    break;
 
-            var worker = scope.ServiceProvider.GetRequiredService<IOutboxDispatcherWorker>();
-            await worker.DispatchAsync(outboxTask, cancellationToken);
-            if (outboxTask.EventId is null)
-                unitOfWork.Repository.Remove(outboxTask);
-            else
-                outboxTask.MarkAsDispatched();
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-            if (cancellationToken.IsCancellationRequested)
-                break;
+                var worker = scope.ServiceProvider.GetRequiredService<IOutboxDispatcherWorker>();
+                var result = await worker.DispatchAsync(queue, outboxTask, cancellationToken);
+                if (result.IsFailed)
+                    return result;
+
+                if (outboxTask.EventId is null)
+                    unitOfWork.Repository.Remove(outboxTask);
+                else
+                    outboxTask.MarkAsDispatched();
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+            }
         }
+        catch
+        {
+            throw;
+        }
+        finally
+        {
+            semapthore.Release();
+        }
+
+        return DispatchResult.Ok(queue);
     }
 }

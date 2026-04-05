@@ -2,7 +2,7 @@
 
 internal interface IRepository
 {
-    Task<OutboxTask?> GetOldestOutboxTaskAsync(Queue queue);
+    Task<OutboxTask?> GetOldestOutboxTaskAsync(OutboxQueue queue);
 
     void AddRange(IEnumerable<OutboxTask> outboxTasks);
     void Remove(OutboxTask outboxTask);

@@ -9,9 +9,8 @@ internal class OutboxDispatcher<TDbContext> : IOutboxDispatcher<TDbContext> wher
         _outboxDispatcherWorker = outboxDispatcherWorker;
     }
 
-    public async Task DispatchAsync(IEnumerable<Queue> queues)
+    public async Task<DispatchResult[]> DispatchAsync(IEnumerable<OutboxQueue> queues)
     {
-        await Task.WhenAll(queues.Select(queue => _outboxDispatcherWorker.DispatchAsync(queue)));
-        //tODO brak zabezpieczenia przed wielokrotnym wywołaniem tego samego zadania, np. poprzez dodanie do bazy danych rekordu z informacją o tym, że zadanie jest już wykonywane
+        return await Task.WhenAll(queues.Select(queue => _outboxDispatcherWorker.DispatchAsync(queue)));
     }
 }

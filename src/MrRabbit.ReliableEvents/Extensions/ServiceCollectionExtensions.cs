@@ -21,5 +21,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOutboxStore<TDbContext>, OutboxStore<TDbContext>>();
         services.AddSingleton<IOutboxTaskFactory, OutboxTaskFactory>();
         services.AddScoped<IUnitOfWork<TDbContext>, UnitOfWork<TDbContext>>();
+        services.AddSingleton<IOutboxQueueSemaphoreProvider<TDbContext>, OutboxQueueSemaphoreProvider<TDbContext>>();
     }
 }

@@ -11,7 +11,7 @@ internal sealed class Repository : IRepository
     public void AddRange(IEnumerable<OutboxTask> outboxTasks) =>
         _dbContext.AddRange(outboxTasks);
 
-    public async Task<OutboxTask?> GetOldestOutboxTaskAsync(Queue queue) =>
+    public async Task<OutboxTask?> GetOldestOutboxTaskAsync(OutboxQueue queue) =>
         await _dbContext.Set<OutboxTask>()
             .Where(x => x.IsDispatched == false && x.QueueName == queue.Name)
             .OrderBy(x => x.OccurredDate)

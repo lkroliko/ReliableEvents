@@ -2,5 +2,5 @@
 
 internal interface IOutboxDispatcherWorker
 {
-    public Task DispatchAsync(OutboxTask outboxTask, CancellationToken cancellationToken);
+    public Task<DispatchResult> DispatchAsync(OutboxQueue queue, OutboxTask outboxTask, CancellationToken cancellationToken);
 }

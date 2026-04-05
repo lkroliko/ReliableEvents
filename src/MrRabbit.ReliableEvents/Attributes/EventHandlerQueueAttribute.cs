@@ -3,14 +3,14 @@
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public class EventHandlerQueueAttribute : Attribute
 {
-    public Queue Queue { get; protected set; } = default!;
+    public OutboxQueue Queue { get; protected set; } = default!;
 
     public EventHandlerQueueAttribute(string queueName)
     {
-        Queue = new Queue(queueName);
+        Queue = new OutboxQueue(queueName);
     }
 
-    public EventHandlerQueueAttribute(Queue queue)
+    public EventHandlerQueueAttribute(OutboxQueue queue)
     {
         Queue = queue;
     }

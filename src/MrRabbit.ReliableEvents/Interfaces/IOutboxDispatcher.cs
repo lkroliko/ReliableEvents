@@ -2,5 +2,5 @@
 
 public interface IOutboxDispatcher<TDbContext> where TDbContext : DbContext
 {
-    Task DispatchAsync(IEnumerable<Queue> queues);
+    Task<DispatchResult[]> DispatchAsync(IEnumerable<OutboxQueue> queues);
 }

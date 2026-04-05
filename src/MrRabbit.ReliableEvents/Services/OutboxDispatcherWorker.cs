@@ -13,13 +13,21 @@ internal class OutboxDispatcherWorker : IOutboxDispatcherWorker
         _serviceProvider = serviceProvider;
     }
 
-    public async Task DispatchAsync(OutboxTask outboxTask, CancellationToken cancellationToken)
+    public async Task<DispatchResult> DispatchAsync(OutboxQueue queue, OutboxTask outboxTask, CancellationToken cancellationToken)
     {
         var integrationEvent = GetEvent();
         var handlerType = GetHandlerType();
         var handler = GetHandler();
         var methodInfo = handlerType.GetMethod(nameof(IOutboxEventHandler<>.HandleAsync));
-        await (Task)methodInfo.Invoke(handler, new[] { integrationEvent, cancellationToken });
+        try
+        {
+            await (Task)methodInfo.Invoke(handler, new[] { integrationEvent, cancellationToken })!;
+        }
+        catch (Exception ex)
+        {
+            return DispatchResult.Fail(queue, ex);
+        }
+        return DispatchResult.Ok(queue);
 
         object GetEvent()
         {

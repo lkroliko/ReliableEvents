@@ -2,6 +2,6 @@
 
 internal class HandlerMetadata
 {
-    internal required Queue Queue { get; init; }
+    internal required OutboxQueue Queue { get; init; }
     internal required Type Type { get; init; }
 }
