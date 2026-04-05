@@ -184,7 +184,7 @@ public class OutboxDispatcherJob : BackgroundService
 
 ### 7. Implement cleanup of dispatched tasks
 
-Tasks with an `EventId` are marked as dispatched but **never deleted** by the library. You must implement a periodic cleanup job to remove old, already-processed records and prevent the outbox table from growing indefinitely:
+The library does **not** delete outbox tasks that have an `EventId` — they are only marked as dispatched. You must implement a periodic cleanup job to remove old, already-processed records and prevent the outbox table from growing indefinitely:
 
 ```csharp
 public class OutboxCleanupJob : BackgroundService
@@ -203,6 +203,7 @@ public class OutboxCleanupJob : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+            // Remove dispatched tasks older than 7 days
             var cutoff = DateTime.UtcNow.AddDays(-7);
             await dbContext.Set<OutboxTask>()
                 .Where(t => t.IsDispatched && t.OccurredDate < cutoff)
