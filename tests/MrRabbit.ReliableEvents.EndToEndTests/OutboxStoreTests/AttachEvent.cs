@@ -1,13 +1,19 @@
-﻿namespace MrRabbit.ReliableEvents.EndToEndTests.OutboxStoreTests;
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace MrRabbit.ReliableEvents.EndToEndTests.OutboxStoreTests;
 
 [Trait("Category", "OutboxStore")]
 public class AttachEvent : ReliableEventsTestBase
 {
     private readonly TestOutboxEvent _event = A.Fixture.Create<TestOutboxEvent>();
 
-    [Fact]
-    public void WhenDispatchThenHandlersHandleAsyncCalled()
+    public AttachEvent(DatabaseFixture fixture) : base(fixture) { }
+
+    [Theory]
+    [DatabaseProviders]
+    public void WhenDispatchThenHandlersHandleAsyncCalled(DatabaseProvider provider)
     {
+        Initialize(provider);
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
 
@@ -28,9 +34,11 @@ public class AttachEvent : ReliableEventsTestBase
         outboxTask.Id.Should().NotBeEmpty();
     }
 
-    [Fact]
-    public void WhenAttachEventTwiceThenExceptionThrown()
+    [Theory]
+    [DatabaseProviders]
+    public void WhenAttachEventTwiceThenExceptionThrown(DatabaseProvider provider)
     {
+        Initialize(provider);
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
         eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
@@ -41,21 +49,26 @@ public class AttachEvent : ReliableEventsTestBase
         result.Should().BeOfType<InvalidOperationException>();
     }
 
-    [Fact]
-    public void WhenAttachEventWithDuplicateEventIdThenExceptionThrown()
+    [Theory]
+    [DatabaseProviders]
+    public void WhenAttachEventWithDuplicateEventIdThenExceptionThrown(DatabaseProvider provider)
     {
-        using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
-        var dbContext = scope.ServiceProvider.GetDbContext();
+        Initialize(provider);
+        var dbContext = AddEventInScope();
         dbContext.SaveChanges();
+        dbContext = AddEventInScope();
 
-        using var scope2 = Services.CreateScope();
-        eventingServicing = scope2.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
-        dbContext = scope2.ServiceProvider.GetDbContext();
-        dbContext.SaveChanges();
+        var result = Record.Exception(() => dbContext.SaveChanges());
 
-        dbContext.Set<OutboxTask>().Single().EventId.Should().Be(_event.EventId);
+        result.Should().NotBeNull();
+        result.Should().BeOfType<DbUpdateException>();
+
+        DbContext AddEventInScope()
+        {
+            var scope = Services.CreateScope();
+            var eventingServicing = scope.ServiceProvider.GetEventingService();
+            eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
+            return scope.ServiceProvider.GetDbContext();
+        }
     }
 }

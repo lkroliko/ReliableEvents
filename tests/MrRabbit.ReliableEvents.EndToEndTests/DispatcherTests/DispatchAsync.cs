@@ -7,6 +7,8 @@ public class DispatchAsync : ReliableEventsTestBase
     private TestBEventHandler _handlerB = Mock.Of<TestBEventHandler>();
     private CancellationToken _cancellationToken;
 
+    public DispatchAsync(DatabaseFixture fixture) : base(fixture) { }
+
     protected override void ConfigureServiceProvider(IServiceCollection services)
     {
         services.RemoveImplementedType<TestAEventHandler>();
@@ -15,9 +17,11 @@ public class DispatchAsync : ReliableEventsTestBase
         services.AddScoped<IEventHandler<TestEvent>>(_ => _handlerB);
     }
 
-    [Fact]
-    public async Task WhenDispatchThenHandlersHandleAsyncCalled()
+    [Theory]
+    [DatabaseProviders]
+    public async Task WhenDispatchThenHandlersHandleAsyncCalled(DatabaseProvider provider)
     {
+        Initialize(provider);
         var @event = A.Fixture.Create<TestEvent>();
 
         await ReliableEvents.Dispatcher.DispatchAsync(new[] { @event }, _cancellationToken);

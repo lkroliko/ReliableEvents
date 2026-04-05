@@ -185,7 +185,9 @@ public class OutboxDispatcherJob : BackgroundService
 
 ### 7. Implement cleanup of dispatched tasks
 
-The library does **not** delete outbox tasks that have an `EventId` — they are only marked as dispatched. You must implement a periodic cleanup job to remove old, already-processed records and prevent the outbox table from growing indefinitely:
+> **💡 Note:** This step is only necessary if you use `EventId` (i.e. when processing events from external systems). Outbox tasks created without an `EventId` are automatically deleted after successful dispatch — no cleanup is needed for them.
+
+The library does **not** delete outbox tasks that have an `EventId` — they are only marked as dispatched to enable [deduplication](#eventid--external-event-deduplication). You must implement a periodic cleanup job to remove old, already-processed records and prevent the outbox table from growing indefinitely:
 
 ```csharp
 public class OutboxCleanupJob : BackgroundService
@@ -497,6 +499,8 @@ The main entry point, providing access to all three subsystems:
 |---|---|
 | `AttachEvent(object, string?, DateTime)` | Attaches a single event to the outbox. Returns affected `OutboxQueue`s. |
 | `AttachEvents<T>(IEnumerable<T>, Func<T,string?>, Func<T,DateTime>)` | Attaches multiple events with custom ID and timestamp factories. |
+| `AddEventAsync(object, string, DateTime, CancellationToken)` | Attaches a single event and immediately calls `SaveChangesAsync` to persist it. The `eventId` is **required**. Returns affected `OutboxQueue`s. |
+| `AddEventsAsync<T>(IEnumerable<T>, Func<T,string>, Func<T,DateTime>, CancellationToken)` | Attaches multiple events and immediately calls `SaveChangesAsync` to persist them. The `eventIdFactory` must return a non-null ID. Returns affected `OutboxQueue`s. |
 
 ### `IOutboxDispatcher<TDbContext>`
 
@@ -562,10 +566,10 @@ Each named queue is processed independently with its own semaphore. This means:
 - **Concurrent dispatch calls** — the semaphore ensures only one consumer processes a queue at a time, preventing duplicate handling
 
 ```csharp
-[EventHandlerQueue("payments")]    // Processed independently...
+[EventHandlerQueue("payments")]
 public class PaymentHandler : IOutboxEventHandler<PaymentEvent> { ... }
 
-[EventHandlerQueue("notifications")] // ...from this queue
+[EventHandlerQueue("notifications")]
 public class NotificationHandler : IOutboxEventHandler<NotificationEvent> { ... }
 ```
 

@@ -47,4 +47,18 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
             throw new InvalidOperationException($"Event with id '{eventId}' is already attached.");
         _attachedEventIds.Add(eventId);
     }
+
+    public async Task<IEnumerable<OutboxQueue>> AddEventAsync(object @event, string eventId, DateTime occurredDate, CancellationToken cancellationToken = default)
+    {
+        var result = AttachEvent(@event, eventId, occurredDate);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return result;
+    }
+
+    public async Task<IEnumerable<OutboxQueue>> AddEventsAsync<TEvent>(IEnumerable<TEvent> events, Func<TEvent, string> eventIdFactory, Func<TEvent, DateTime> occurredDateFactory, CancellationToken cancellationToken = default)
+    {
+        var result = AttachEvents(events, eventIdFactory, occurredDateFactory);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return result;
+    }
 }

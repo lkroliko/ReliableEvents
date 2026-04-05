@@ -5,9 +5,13 @@ public class AttachEvents : ReliableEventsTestBase
 {
     private readonly TestOutboxEvent[] _events = A.Fixture.CreateMany<TestOutboxEvent>(2).ToArray();
 
-    [Fact]
-    public void WhenDispatchThenHandlersHandleAsyncCalled()
+    public AttachEvents(DatabaseFixture fixture) : base(fixture) { }
+
+    [Theory]
+    [DatabaseProviders]
+    public void WhenDispatchThenHandlersHandleAsyncCalled(DatabaseProvider provider)
     {
+        Initialize(provider);
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
 

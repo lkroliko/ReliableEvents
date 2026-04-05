@@ -16,5 +16,6 @@ internal class OutboxTaskConfiguration : IEntityTypeConfiguration<OutboxTask>
         builder.Property(x => x.OccurredDate).IsRequired();
 
         builder.HasIndex(x => new { x.QueueName, x.IsDispatched, x.OccurredDate });
+        builder.HasIndex(x => x.EventId).IsUnique();
     }
 }

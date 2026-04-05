@@ -7,15 +7,19 @@ public class DispatchAsync : ReliableEventsTestBase
     private readonly TestOutboxEventHandler _handler = Mock.Of<TestOutboxEventHandler>();
     private readonly CancellationToken _cancellationToken = CancellationToken.None;
 
+    public DispatchAsync(DatabaseFixture fixture) : base(fixture) { }
+
     protected override void ConfigureServiceProvider(IServiceCollection services)
     {
         services.RemoveImplementedType<TestOutboxEventHandler>();
         services.AddScoped(_ => _handler);
     }
 
-    [Fact]
-    public async Task WhenDispatchThenHandlersHandleAsyncCalled()
+    [Theory]
+    [DatabaseProviders]
+    public async Task WhenDispatchThenHandlersHandleAsyncCalled(DatabaseProvider provider)
     {
+        Initialize(provider);
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
         eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
@@ -28,9 +32,11 @@ public class DispatchAsync : ReliableEventsTestBase
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<TestOutboxEvent>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
-    public async Task WhenMultipleDispatchCalledThenHandlersHandleAsyncCalledOnce()
+    [Theory]
+    [DatabaseProviders]
+    public async Task WhenMultipleDispatchCalledThenHandlersHandleAsyncCalledOnce(DatabaseProvider provider)
     {
+        Initialize(provider);
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
         eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
@@ -45,9 +51,11 @@ public class DispatchAsync : ReliableEventsTestBase
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<TestOutboxEvent>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
-    public async Task WhenHandlerThrowExceptionThenHandlersHandleAsyncCalledExactly()
+    [Theory]
+    [DatabaseProviders]
+    public async Task WhenHandlerThrowExceptionThenHandlersHandleAsyncCalledExactly(DatabaseProvider provider)
     {
+        Initialize(provider);
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<TestOutboxEvent>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception());
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
@@ -65,9 +73,11 @@ public class DispatchAsync : ReliableEventsTestBase
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<TestOutboxEvent>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
-    [Fact]
-    public async Task WhenDispatchedThenResultIsValid()
+    [Theory]
+    [DatabaseProviders]
+    public async Task WhenDispatchedThenResultIsValid(DatabaseProvider provider)
     {
+        Initialize(provider);
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
         eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
@@ -81,9 +91,11 @@ public class DispatchAsync : ReliableEventsTestBase
         result[0].IsSuccess.Should().BeTrue();
     }
 
-    [Fact]
-    public async Task WhenNotDispatchedThrowResultIsValid()
+    [Theory]
+    [DatabaseProviders]
+    public async Task WhenNotDispatchedThrowResultIsValid(DatabaseProvider provider)
     {
+        Initialize(provider);
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<TestOutboxEvent>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception());
         using var scope = Services.CreateScope();
         var eventingServicing = scope.ServiceProvider.GetEventingService();
