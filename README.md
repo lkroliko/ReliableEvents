@@ -22,6 +22,8 @@
 
 This library implements the **Transactional Outbox Pattern**: events are serialized and stored in the same database transaction as your domain state, then dispatched asynchronously by a dedicated worker. This guarantees **at-least-once delivery** with zero external dependencies beyond your existing EF Core database.
 
+> **⚠️ Important:** This library is intended for applications running as a single instance connected to an owned database. It does not support horizontal scaling or competing consumers. If you run multiple instances of your application against the same database, outbox events may be processed more than once.
+
 ## Features
 
 - 🔒 **Transactional safety** — events are persisted atomically with your domain state via EF Core
@@ -77,7 +79,7 @@ public class OrderPlacedHandler : IEventHandler<OrderPlaced>
 }
 ```
 
-**Outbox event handler** — executed reliably from the outbox after persistence:
+**Outbox event handler** — executed reliably from the outbox after persistence. Each handler runs in its own scope and the dispatcher automatically calls `SaveChanges` on DbContext after successful execution to mark the task as processed — you do **not** need to call it yourself:
 
 ```csharp
 [EventHandlerQueue("orders")]
@@ -85,7 +87,9 @@ public class OrderConfirmedHandler : IOutboxEventHandler<OrderConfirmed>
 {
     public Task HandleAsync(OrderConfirmed @event, CancellationToken cancellationToken)
     {
-        // This handler is guaranteed to execute at least once
+        // This handler is guaranteed to execute at least once.
+        // SaveChanges is called by the dispatcher after this method completes —
+        // the OutboxTask is marked as dispatched (or removed) automatically.
         Console.WriteLine($"Order {@@event.OrderId} confirmed at {@@event.ConfirmedAt}");
         return Task.CompletedTask;
     }
@@ -172,12 +176,12 @@ public class OrderService
 
 ### Core Components
 
-| Component | Interface | Description |
-|---|---|---|
-| **Dispatcher** | `IDispatcher` | Resolves and invokes all `IEventHandler<T>` implementations for a given set of events in-memory. |
-| **Outbox Store** | `IOutboxStore<TDbContext>` | Serializes events and attaches them as `OutboxTask` entities to the current EF Core change tracker. Events are committed with your `SaveChanges` call. |
-| **Outbox Dispatcher** | `IOutboxDispatcher<TDbContext>` | Processes all queues in parallel. Each queue is processed sequentially (oldest-first) with per-queue semaphore locking. |
-| **Outbox Dispatcher Worker** | `IOutboxDispatcherWorker` | Deserializes and executes a single `OutboxTask` by resolving and invoking the corresponding `IOutboxEventHandler<T>`. |
+| Component | Interface | Scope | Description |
+|---|---|---|---|
+| **ReliableEvents** | `IReliableEvents<TDbContext>` | Scoped | The main entry point — aggregates `IDispatcher`, `IOutboxStore`, and `IOutboxDispatcher` into a single injectable service. |
+| **Dispatcher** | `IDispatcher` | Singleton | Resolves and invokes all `IEventHandler<T>` implementations for a given set of events in-memory. |
+| **Outbox Store** | `IOutboxStore<TDbContext>` | Scoped | Serializes events and attaches them as `OutboxTask` entities to the current EF Core change tracker. Events are committed with your `SaveChanges` call. |
+| **Outbox Dispatcher** | `IOutboxDispatcher<TDbContext>` | Scoped | Processes all queues in parallel. Each queue is processed sequentially (oldest-first) with per-queue semaphore locking. |
 
 ### Event Lifecycle
 
