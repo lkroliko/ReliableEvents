@@ -1,5 +1,6 @@
 ﻿using DotNet.Testcontainers.Builders;
 using Testcontainers.MsSql;
+using Testcontainers.PostgreSql;
 
 namespace MrRabbit.ReliableEvents.EndToEndTests;
 
@@ -12,6 +13,13 @@ public class DatabaseFixture : IAsyncLifetime
         .WithCleanUp(true)
         .Build();
 
+    private readonly PostgreSqlContainer _postgresContainer = new PostgreSqlBuilder("postgres:18")
+        .WithDatabase("ReliableEvents")
+        .WithPortBinding(5432, assignRandomHostPort: true)
+        .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(5432))
+        .WithCleanUp(true)
+        .Build();
+
     public DatabaseFixture()
     {
         SQLitePCL.Batteries.Init();
@@ -19,19 +27,20 @@ public class DatabaseFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        await _msSqlContainer.StartAsync();
+        await Task.WhenAll(_msSqlContainer.StartAsync(), _postgresContainer.StartAsync());
     }
 
     public async ValueTask DisposeAsync()
     {
         File.Delete(_fileName);
-        await _msSqlContainer.StopAsync();
+        await Task.WhenAll(_msSqlContainer.StopAsync(), _postgresContainer.StopAsync());
     }
 
     public string GetConnectionString(DatabaseProvider provider) => provider switch
     {
         DatabaseProvider.SQLite => $"data source={_fileName}",
         DatabaseProvider.MsSql => _msSqlContainer.GetConnectionString().Replace("master", "ReliableEvents"),
+        DatabaseProvider.Postgres => _postgresContainer.GetConnectionString(), //.Replace("postgres", "ReliableEvents"),
         _ => throw new NotImplementedException()
     };
 }

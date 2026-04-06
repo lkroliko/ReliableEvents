@@ -4,4 +4,5 @@ public enum DatabaseProvider
 {
     SQLite,
     MsSql,
+    Postgres,
 }

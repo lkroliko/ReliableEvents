@@ -15,7 +15,7 @@ public class DatabaseProvidersAttribute : DataAttribute
     }
 
     public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker) =>
-        new(CreateTheoryDataRows(DatabaseProvider.SQLite, testMethod).Concat(CreateTheoryDataRows(DatabaseProvider.MsSql, testMethod)).ToArray());
+        new(Enum.GetValues<DatabaseProvider>().Cast<DatabaseProvider>().SelectMany(x => CreateTheoryDataRows(x, testMethod)).ToArray());
 
     private TheoryDataRow[] CreateTheoryDataRows(DatabaseProvider provider, MethodInfo testMethod)
     {

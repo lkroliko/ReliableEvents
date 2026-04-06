@@ -1,6 +1,6 @@
 ﻿namespace MrRabbit.ReliableEvents.EndToEndTests.OutboxDispatchAfterHookTests;
 
-[Trait("Category", "AfterOutboxDispatchHook")]
+[Trait("Category", "OutboxDispatchAfterHook")]
 public class AfterDispatchAsync : ReliableEventsTestBase
 {
     private readonly TestOutboxEvent _event = A.Fixture.Create<TestOutboxEvent>();

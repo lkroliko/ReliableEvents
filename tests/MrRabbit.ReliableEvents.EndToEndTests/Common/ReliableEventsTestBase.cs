@@ -57,6 +57,9 @@ public abstract class ReliableEventsTestBase
             case DatabaseProvider.MsSql:
                 services.AddDbContext<TestDbContext>(options => options.UseSqlServer(_fixture.GetConnectionString(provider)));
                 break;
+            case DatabaseProvider.Postgres:
+                services.AddDbContext<TestDbContext>(options => options.UseNpgsql(_fixture.GetConnectionString(provider)));
+                break;
             default:
                 throw new NotImplementedException();
         }
