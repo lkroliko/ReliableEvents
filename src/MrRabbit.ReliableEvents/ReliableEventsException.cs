@@ -1,4 +1,4 @@
-﻿namespace MrRabbit.ReliableEvents.Exceptions;
+﻿namespace MrRabbit.ReliableEvents;
 
 public class ReliableEventsException : Exception
 {

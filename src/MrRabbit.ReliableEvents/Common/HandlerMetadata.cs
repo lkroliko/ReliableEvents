@@ -1,4 +1,4 @@
-﻿namespace MrRabbit.ReliableEvents;
+﻿namespace MrRabbit.ReliableEvents.Common;
 
 internal class HandlerMetadata
 {
