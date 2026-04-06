@@ -6,11 +6,13 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IOutboxQueueSemaphoreProvider<TDbContext> _semaphoreProvider;
+    private readonly IOutboxDispatchHookInvoker _hookInvoker;
 
-    public QueueOutboxDispatcher(IServiceProvider serviceProvider, IOutboxQueueSemaphoreProvider<TDbContext> SemaphoreProvider)
+    public QueueOutboxDispatcher(IServiceProvider serviceProvider, IOutboxQueueSemaphoreProvider<TDbContext> SemaphoreProvider, IOutboxDispatchHookInvoker hookInvoker)
     {
         _serviceProvider = serviceProvider;
         _semaphoreProvider = SemaphoreProvider;
+        _hookInvoker = hookInvoker;
     }
 
     public async Task<DispatchResult> DispatchAsync(OutboxQueue queue, CancellationToken cancellationToken)
@@ -50,28 +52,9 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
         finally
         {
             semapthore.Release();
-            await RunPostProcessors(queue, dispatchedTasksCount);
+            await _hookInvoker.InvokeAfterHooksAsync(queue, dispatchedTasksCount);
         }
 
         return DispatchResult.Ok(queue);
-    }
-
-    private async Task RunPostProcessors(OutboxQueue queue, int dispatchedTasksCount)
-    {
-        var context = new PostOutboxDispatchContext()
-        {
-            Queue = queue,
-            DispatchedTasksCount = dispatchedTasksCount,
-        };
-        try
-        {
-            var processors = _serviceProvider.GetRequiredService<IEnumerable<IOutboxDispatchPostProcessor>>();
-            foreach (var processor in processors)
-                await processor.ProcessAsync(context);
-        }
-        catch (Exception ex)
-        {
-            throw new ReliableEventsException("An error occurred while running post processors.", ex);
-        }
     }
 }

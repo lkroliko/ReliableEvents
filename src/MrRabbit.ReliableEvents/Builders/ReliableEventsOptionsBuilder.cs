@@ -69,9 +69,9 @@ public class ReliableEventsOptionsBuilder
         return this;
     }
 
-    public ReliableEventsOptionsBuilder AddOutboxDispatchPostProcessor<TOutboxDispatchPostProcessor>() where TOutboxDispatchPostProcessor : class, IOutboxDispatchPostProcessor
+    public ReliableEventsOptionsBuilder AddOutboxDispatchPostHook<TOutboxDispatchPostHook>() where TOutboxDispatchPostHook : class, IAfterOutboxDispatchHook
     {
-        _services.AddScoped<IOutboxDispatchPostProcessor, TOutboxDispatchPostProcessor>();
+        _services.AddScoped<IAfterOutboxDispatchHook, TOutboxDispatchPostHook>();
 
         return this;
     }
