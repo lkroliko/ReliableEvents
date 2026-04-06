@@ -33,7 +33,10 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
                 var worker = scope.ServiceProvider.GetRequiredService<IOutboxDispatcherWorker>();
                 var result = await worker.DispatchAsync(queue, outboxTask, cancellationToken);
                 if (result.IsFailed)
+                {
+                    await _hookInvoker.InvokeExceptionHooksAsync(result);
                     return result;
+                }
 
                 if (outboxTask.EventId is null)
                     unitOfWork.Repository.Remove(outboxTask);

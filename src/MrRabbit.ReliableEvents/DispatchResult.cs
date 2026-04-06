@@ -2,7 +2,7 @@
 
 public class DispatchResult
 {
-    public OutboxQueue? Queue { get; }
+    public OutboxQueue Queue { get; }
     public bool IsSuccess { get; }
     public bool IsFailed => IsSuccess == false;
     public Exception? Exception { get; }

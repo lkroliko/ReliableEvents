@@ -1,6 +1,6 @@
 ﻿namespace MrRabbit.ReliableEvents.EndToEndTests.Common;
 
-internal class TestAfterOutboxDispatchHook : IAfterOutboxDispatchHook
+internal class TestAfterOutboxDispatchHook : IOutboxDispatchAfterHook
 {
-    public virtual Task AfterDispatchAsync(AfterOutboxDispatchContext context) => Task.CompletedTask;
+    public virtual Task AfterDispatchAsync(OutboxDispatchAfterContext context) => Task.CompletedTask;
 }
