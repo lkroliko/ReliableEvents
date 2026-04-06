@@ -15,13 +15,13 @@ internal class OutboxDispatcherWorker : IOutboxDispatcherWorker
 
     public async Task<DispatchResult> DispatchAsync(OutboxQueue queue, OutboxTask outboxTask, CancellationToken cancellationToken)
     {
-        var integrationEvent = GetEvent();
+        var @event = GetEvent();
         var handlerType = GetHandlerType();
         var handler = GetHandler();
         var methodInfo = handlerType.GetMethod(nameof(IOutboxEventHandler<>.HandleAsync));
         try
         {
-            await (Task)methodInfo.Invoke(handler, new[] { integrationEvent, cancellationToken })!;
+            await (Task)methodInfo.Invoke(handler, new[] { @event, cancellationToken })!;
         }
         catch (Exception ex)
         {
