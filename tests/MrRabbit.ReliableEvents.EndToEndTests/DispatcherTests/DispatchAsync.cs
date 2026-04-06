@@ -3,9 +3,10 @@
 [Trait("Category", "Dispatcher")]
 public class DispatchAsync : ReliableEventsTestBase
 {
-    private TestAEventHandler _handlerA = Mock.Of<TestAEventHandler>();
-    private TestBEventHandler _handlerB = Mock.Of<TestBEventHandler>();
-    private CancellationToken _cancellationToken;
+    private readonly TestAEventHandler _handlerA = Mock.Of<TestAEventHandler>();
+    private readonly TestBEventHandler _handlerB = Mock.Of<TestBEventHandler>();
+    private readonly CancellationToken _cancellationToken;
+    private readonly TestEvent _event = A.Fixture.Create<TestEvent>();
 
     public DispatchAsync(DatabaseFixture fixture) : base(fixture) { }
 
@@ -22,11 +23,10 @@ public class DispatchAsync : ReliableEventsTestBase
     public async Task WhenDispatchThenHandlersHandleAsyncCalled(DatabaseProvider provider)
     {
         Initialize(provider);
-        var @event = A.Fixture.Create<TestEvent>();
 
-        await ReliableEvents.Dispatcher.DispatchAsync(new[] { @event }, _cancellationToken);
+        await ReliableEvents.Dispatcher.DispatchAsync(new[] { _event }, _cancellationToken);
 
-        Mock.Get(_handlerA).Verify(x => x.HandleAsync(@event, _cancellationToken), Times.Once);
-        Mock.Get(_handlerB).Verify(x => x.HandleAsync(@event, _cancellationToken), Times.Once);
+        Mock.Get(_handlerA).Verify(x => x.HandleAsync(_event, _cancellationToken), Times.Once);
+        Mock.Get(_handlerB).Verify(x => x.HandleAsync(_event, _cancellationToken), Times.Once);
     }
 }

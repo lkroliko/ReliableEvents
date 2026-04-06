@@ -6,6 +6,7 @@ namespace MrRabbit.ReliableEvents.EndToEndTests.OutboxStoreTests;
 public class AttachEvent : ReliableEventsTestBase
 {
     private readonly TestOutboxEvent _event = A.Fixture.Create<TestOutboxEvent>();
+    private readonly CancellationToken _cancellationToken;
 
     public AttachEvent(DatabaseFixture fixture) : base(fixture) { }
 
@@ -15,7 +16,7 @@ public class AttachEvent : ReliableEventsTestBase
     {
         Initialize(provider);
         using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
+        var eventingServicing = scope.ServiceProvider.GetReliableEvents();
 
         eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
 
@@ -39,11 +40,11 @@ public class AttachEvent : ReliableEventsTestBase
     public void WhenAttachEventTwiceThenExceptionThrown(DatabaseProvider provider)
     {
         Initialize(provider);
-        using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
 
-        var result = Record.Exception(() => eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate));
+        var reliableEvents = ReliableEvents;
+        reliableEvents.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
+
+        var result = Record.Exception(() => reliableEvents.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate));
 
         result.Should().NotBeNull();
         result.Should().BeOfType<InvalidOperationException>();
@@ -51,24 +52,18 @@ public class AttachEvent : ReliableEventsTestBase
 
     [Theory]
     [DatabaseProviders]
-    public void WhenAttachEventWithDuplicateEventIdThenExceptionThrown(DatabaseProvider provider)
+    public async Task WhenAttachEventWithDuplicateEventIdThenExceptionThrown(DatabaseProvider provider)
     {
         Initialize(provider);
-        var dbContext = AddEventInScope();
-        dbContext.SaveChanges();
-        dbContext = AddEventInScope();
+        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        var scope = Services.CreateScope();
+        var reliableEvents = scope.ServiceProvider.GetReliableEvents();
+        reliableEvents.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
+        var dbContext = scope.ServiceProvider.GetDbContext();
 
         var result = Record.Exception(() => dbContext.SaveChanges());
 
         result.Should().NotBeNull();
         result.Should().BeOfType<DbUpdateException>();
-
-        DbContext AddEventInScope()
-        {
-            var scope = Services.CreateScope();
-            var eventingServicing = scope.ServiceProvider.GetEventingService();
-            eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
-            return scope.ServiceProvider.GetDbContext();
-        }
     }
 }

@@ -2,7 +2,7 @@
 
 internal static class ServiceProviderExtensions
 {
-    internal static IReliableEvents<TestDbContext> GetEventingService(this IServiceProvider serviceProvider) =>
+    internal static IReliableEvents<TestDbContext> GetReliableEvents(this IServiceProvider serviceProvider) =>
         serviceProvider.GetRequiredService<IReliableEvents<TestDbContext>>();
 
     internal static TestDbContext GetDbContext(this IServiceProvider serviceProvider) =>

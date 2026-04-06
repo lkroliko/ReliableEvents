@@ -20,14 +20,9 @@ public class DispatchAsync : ReliableEventsTestBase
     public async Task WhenDispatchThenHandlersHandleAsyncCalled(DatabaseProvider provider)
     {
         Initialize(provider);
-        using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
-        var dbContext = scope.ServiceProvider.GetDbContext();
-        dbContext.SaveChanges();
-        var outboxTask = dbContext.Set<OutboxTask>().First();
+        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
-        await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]);
+        await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<TestOutboxEvent>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -37,20 +32,15 @@ public class DispatchAsync : ReliableEventsTestBase
     public async Task WhenMultipleDispatchCalledThenHandlersHandleAsyncCalledOnce(DatabaseProvider provider)
     {
         Initialize(provider);
-        using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
-        var dbContext = scope.ServiceProvider.GetDbContext();
-        dbContext.SaveChanges();
+        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
-        var tasks = new[]
+        await Task.WhenAll(new[]
         {
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken),
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken),
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken)
-        };
+        });
 
-        await Task.WhenAll(tasks);
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<TestOutboxEvent>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -60,20 +50,15 @@ public class DispatchAsync : ReliableEventsTestBase
     {
         Initialize(provider);
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<TestOutboxEvent>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception());
-        using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
-        var dbContext = scope.ServiceProvider.GetDbContext();
-        dbContext.SaveChanges();
+        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
-        var tasks = new[]
+        await Task.WhenAll(new[]
         {
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken),
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken),
             Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken)
-        };
+        });
 
-        await Task.WhenAll(tasks);
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<TestOutboxEvent>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Exactly(3));
     }
 
@@ -82,14 +67,9 @@ public class DispatchAsync : ReliableEventsTestBase
     public async Task WhenDispatchedThenResultIsValid(DatabaseProvider provider)
     {
         Initialize(provider);
-        using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
-        var dbContext = scope.ServiceProvider.GetDbContext();
-        dbContext.SaveChanges();
-        var outboxTask = dbContext.Set<OutboxTask>().First();
+        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
-        var result = await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]);
+        var result = await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 
         result.Should().HaveCount(1);
         result[0].IsSuccess.Should().BeTrue();
@@ -101,13 +81,9 @@ public class DispatchAsync : ReliableEventsTestBase
     {
         Initialize(provider);
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<TestOutboxEvent>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception());
-        using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
-        eventingServicing.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
-        var dbContext = scope.ServiceProvider.GetDbContext();
-        dbContext.SaveChanges();
+        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
-        var result = await Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue]), _cancellationToken);
+        var result = await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 
         result.Should().HaveCount(1);
         result[0].IsSuccess.Should().BeFalse();

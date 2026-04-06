@@ -13,9 +13,9 @@ public class AttachEvents : ReliableEventsTestBase
     {
         Initialize(provider);
         using var scope = Services.CreateScope();
-        var eventingServicing = scope.ServiceProvider.GetEventingService();
+        var reliableEvents = scope.ServiceProvider.GetReliableEvents();
 
-        eventingServicing.OutboxStore.AttachEvents<OutboxEventBase>(_events, e => e.EventId, e => e.OccurredDate);
+        reliableEvents.OutboxStore.AttachEvents<OutboxEventBase>(_events, e => e.EventId, e => e.OccurredDate);
 
         var dbContext = scope.ServiceProvider.GetDbContext();
         dbContext.SaveChanges();
