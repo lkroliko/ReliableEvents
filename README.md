@@ -595,8 +595,8 @@ The main entry point, providing access to all three subsystems:
 |---|---|
 | `AttachEvent(object, string?, DateTime)` | Attaches a single event to the outbox. Returns affected `OutboxQueue`s. |
 | `AttachEvents<T>(IEnumerable<T>, Func<T,string?>, Func<T,DateTime>)` | Attaches multiple events with custom ID and timestamp factories. |
-| `AddEventAsync(object, string, DateTime, CancellationToken)` | Attaches a single event and immediately calls `SaveChangesAsync` to persist it. The `eventId` is **required**. Returns affected `OutboxQueue`s. |
-| `AddEventsAsync<T>(IEnumerable<T>, Func<T,string>, Func<T,DateTime>, CancellationToken)` | Attaches multiple events and immediately calls `SaveChangesAsync` to persist them. The `eventIdFactory` must return a non-null ID. Returns affected `OutboxQueue`s. |
+| `TryAddEventAsync(object, string, DateTime, CancellationToken)` | Attaches a single event and immediately calls `SaveChangesAsync` to persist it. The `eventId` is **required**. If a duplicate `EventId` is detected (either before or during save), returns an **empty** collection — no exception is thrown. |
+| `AddEventsAsync<T>(IEnumerable<T>, Func<T,string>, Func<T,DateTime>, CancellationToken)` | Attaches multiple events and immediately calls `SaveChangesAsync` to persist them. The `eventIdFactory` must return a non-null ID. Events whose `EventId` already exists in the database are **skipped**, but if a duplicate key conflict occurs during save, an `OutboxEventAlreadyExistException` is thrown. |
 
 ### `IOutboxDispatcher<TDbContext>`
 
