@@ -45,6 +45,16 @@ This library implements the **Transactional Outbox Pattern**: events are seriali
 dotnet add package MrRabbit.ReliableEvents
 ```
 
+### Tested Databases
+
+The library is end-to-end tested against the following database providers:
+
+| Database | EF Core Provider | Version |
+|---|---|---|
+| SQLite | `Microsoft.EntityFrameworkCore.Sqlite` | — |
+| SQL Server | `Microsoft.EntityFrameworkCore.SqlServer` | 2025 |
+| PostgreSQL | `Npgsql.EntityFrameworkCore.PostgreSQL` | 18 |
+
 ## Quick Start
 
 ### 1. Define your events
