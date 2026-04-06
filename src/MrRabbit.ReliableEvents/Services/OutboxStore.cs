@@ -50,15 +50,32 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
 
     public async Task<IEnumerable<OutboxQueue>> AddEventAsync(object @event, string eventId, DateTime occurredDate, CancellationToken cancellationToken = default)
     {
+        if (await _unitOfWork.Repository.AnyAsync(eventId, cancellationToken))
+            return Array.Empty<OutboxQueue>();
         var result = AttachEvent(@event, eventId, occurredDate);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return result;
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return result;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is not null && ex.InnerException.Message.Contains("duplicate key"))
+        {
+            return Array.Empty<OutboxQueue>();
+        }
     }
 
-    public async Task<IEnumerable<OutboxQueue>> AddEventsAsync<TEvent>(IEnumerable<TEvent> events, Func<TEvent, string> eventIdFactory, Func<TEvent, DateTime> occurredDateFactory, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OutboxQueue>> AddEventsAsync<TEvent>(IEnumerable<TEvent> events, Func<TEvent, string> eventIdFactory, Func<TEvent, DateTime> occurredDateFactory, CancellationToken cancellationToken = default) where TEvent : notnull
     {
-        var result = AttachEvents(events, eventIdFactory, occurredDateFactory);
+        var result = new List<OutboxQueue>();
+        foreach (var @event in events)
+        {
+            var eventId = eventIdFactory(@event);
+            if (await _unitOfWork.Repository.AnyAsync(eventId, cancellationToken))
+                continue;
+            result.AddRange(AttachEvent(@event, eventId, occurredDateFactory(@event)));
+        }
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return result;
+        return result.Distinct().ToArray();
     }
+
 }
