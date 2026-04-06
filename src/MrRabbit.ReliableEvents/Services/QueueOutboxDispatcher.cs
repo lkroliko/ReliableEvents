@@ -52,7 +52,8 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
         finally
         {
             semapthore.Release();
-            await _hookInvoker.InvokeAfterHooksAsync(queue, dispatchedTasksCount);
+            if (dispatchedTasksCount > 0)
+                await _hookInvoker.InvokeAfterHooksAsync(queue, dispatchedTasksCount);
         }
 
         return DispatchResult.Ok(queue);
