@@ -32,20 +32,20 @@ internal class OutboxDispatcherWorker : IOutboxDispatcherWorker
         object GetEvent()
         {
             var typeName = $"{outboxTask.EventFullName}, {outboxTask.EventAssemblyName}";
-            var eventType = Type.GetType(typeName) ?? throw new ReliableEventException($"Event type '{typeName}' not found.");
-            return _serializer.Deserialize(outboxTask.EventData, eventType) ?? throw new ReliableEventException($"Failed to deserialize event data for type '{typeName}'.");
+            var eventType = Type.GetType(typeName) ?? throw new ReliableEventsException($"Event type '{typeName}' not found.");
+            return _serializer.Deserialize(outboxTask.EventData, eventType) ?? throw new ReliableEventsException($"Failed to deserialize event data for type '{typeName}'.");
         }
 
         Type GetHandlerType()
         {
             var typeName = $"{outboxTask.HandlerFullName}, {outboxTask.HandlerAssemblyName}";
-            return Type.GetType(typeName) ?? throw new ReliableEventException($"Handler type '{typeName}' not found.");
+            return Type.GetType(typeName) ?? throw new ReliableEventsException($"Handler type '{typeName}' not found.");
         }
 
         object GetHandler()
         {
             var typeName = $"{outboxTask.HandlerFullName}, {outboxTask.HandlerAssemblyName}";
-            var handlerType = Type.GetType(typeName) ?? throw new ReliableEventException($"Handler type '{typeName}' not found.");
+            var handlerType = Type.GetType(typeName) ?? throw new ReliableEventsException($"Handler type '{typeName}' not found.");
             return _serviceProvider.GetRequiredService(handlerType);
         }
     }

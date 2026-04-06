@@ -9,8 +9,8 @@ internal class OutboxDispatcher<TDbContext> : IOutboxDispatcher<TDbContext> wher
         _outboxDispatcherWorker = outboxDispatcherWorker;
     }
 
-    public async Task<DispatchResult[]> DispatchAsync(IEnumerable<OutboxQueue> queues)
+    public async Task<DispatchResult[]> DispatchAsync(IEnumerable<OutboxQueue> queues, CancellationToken cancellationToken)
     {
-        return await Task.WhenAll(queues.Select(queue => _outboxDispatcherWorker.DispatchAsync(queue)));
+        return await Task.WhenAll(queues.Select(queue => _outboxDispatcherWorker.DispatchAsync(queue, cancellationToken)));
     }
 }

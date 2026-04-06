@@ -17,6 +17,7 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
     {
         var semapthore = _semaphoreProvider.Get(queue);
         await semapthore.WaitAsync(cancellationToken);
+        var dispatchedTasksCount = 0;
         try
         {
             while (true)
@@ -37,7 +38,7 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
                 else
                     outboxTask.MarkAsDispatched();
                 await unitOfWork.SaveChangesAsync(cancellationToken);
-
+                dispatchedTasksCount++;
                 if (cancellationToken.IsCancellationRequested)
                     break;
             }
@@ -49,8 +50,28 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
         finally
         {
             semapthore.Release();
+            await RunPostProcessors(queue, dispatchedTasksCount);
         }
 
         return DispatchResult.Ok(queue);
+    }
+
+    private async Task RunPostProcessors(OutboxQueue queue, int dispatchedTasksCount)
+    {
+        var context = new PostOutboxDispatchContext()
+        {
+            Queue = queue,
+            DispatchedTasksCount = dispatchedTasksCount,
+        };
+        try
+        {
+            var processors = _serviceProvider.GetRequiredService<IEnumerable<IOutboxDispatchPostProcessor>>();
+            foreach (var processor in processors)
+                await processor.ProcessAsync(context);
+        }
+        catch (Exception ex)
+        {
+            throw new ReliableEventsException("An error occurred while running post processors.", ex);
+        }
     }
 }

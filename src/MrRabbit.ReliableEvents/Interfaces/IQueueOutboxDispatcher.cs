@@ -2,5 +2,5 @@
 
 internal interface IQueueOutboxDispatcher<TDbContext> where TDbContext : DbContext
 {
-    Task<DispatchResult> DispatchAsync(OutboxQueue queue, CancellationToken cancellationToken = default);
+    Task<DispatchResult> DispatchAsync(OutboxQueue queue, CancellationToken cancellationToken);
 }

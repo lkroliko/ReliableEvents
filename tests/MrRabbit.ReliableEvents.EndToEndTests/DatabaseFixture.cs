@@ -24,7 +24,6 @@ public class DatabaseFixture : IAsyncLifetime
 
     public async ValueTask DisposeAsync()
     {
-        //SqliteConnection.ClearAllPools();
         File.Delete(_fileName);
         await _msSqlContainer.StopAsync();
     }
@@ -35,5 +34,4 @@ public class DatabaseFixture : IAsyncLifetime
         DatabaseProvider.MsSql => _msSqlContainer.GetConnectionString().Replace("master", "ReliableEvents"),
         _ => throw new NotImplementedException()
     };
-
 }
