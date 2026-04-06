@@ -20,7 +20,7 @@ public class DispatchAsync : ReliableEventsTestBase
     public async Task WhenDispatchThenHandlersHandleAsyncCalled(DatabaseProvider provider)
     {
         Initialize(provider);
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 
@@ -32,7 +32,7 @@ public class DispatchAsync : ReliableEventsTestBase
     public async Task WhenMultipleDispatchCalledThenHandlersHandleAsyncCalledOnce(DatabaseProvider provider)
     {
         Initialize(provider);
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         await Task.WhenAll(new[]
         {
@@ -50,7 +50,7 @@ public class DispatchAsync : ReliableEventsTestBase
     {
         Initialize(provider);
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<TestOutboxEvent>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception());
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         await Task.WhenAll(new[]
         {
@@ -67,7 +67,7 @@ public class DispatchAsync : ReliableEventsTestBase
     public async Task WhenDispatchedThenResultIsValid(DatabaseProvider provider)
     {
         Initialize(provider);
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         var result = await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 
@@ -81,7 +81,7 @@ public class DispatchAsync : ReliableEventsTestBase
     {
         Initialize(provider);
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<TestOutboxEvent>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception());
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         var result = await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 

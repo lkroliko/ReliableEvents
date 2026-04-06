@@ -55,7 +55,7 @@ public class AttachEvent : ReliableEventsTestBase
     public async Task WhenAttachEventWithDuplicateEventIdThenExceptionThrown(DatabaseProvider provider)
     {
         Initialize(provider);
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
         var scope = Services.CreateScope();
         var reliableEvents = scope.ServiceProvider.GetReliableEvents();
         reliableEvents.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);

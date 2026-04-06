@@ -24,7 +24,7 @@ public class OnDispatchExceptionAsync : ReliableEventsTestBase
     {
         Initialize(provider);
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<TestOutboxEvent>(), It.IsAny<CancellationToken>())).ThrowsAsync(_exception);
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 
@@ -36,7 +36,7 @@ public class OnDispatchExceptionAsync : ReliableEventsTestBase
     public async Task WhenHandlerNotThrowExceptionThenHookOnDispatchExceptionAsyncNotCalled(DatabaseProvider provider)
     {
         Initialize(provider);
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 

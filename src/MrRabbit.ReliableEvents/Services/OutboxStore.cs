@@ -48,7 +48,7 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
         _attachedEventIds.Add(eventId);
     }
 
-    public async Task<IEnumerable<OutboxQueue>> AddEventAsync(object @event, string eventId, DateTime occurredDate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<OutboxQueue>> TryAddEventAsync(object @event, string eventId, DateTime occurredDate, CancellationToken cancellationToken = default)
     {
         if (await _unitOfWork.Repository.AnyAsync(eventId, cancellationToken))
             return Array.Empty<OutboxQueue>();
@@ -75,7 +75,15 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
             result.AddRange(AttachEvent(@event, eventId, occurredDateFactory(@event)));
         }
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return result.Distinct().ToArray();
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return result.Distinct().ToArray();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is not null && ex.InnerException.Message.Contains("duplicate key"))
+        {
+            throw new OutboxEventAlreadyExistException(ex);
+        }
     }
 
 }

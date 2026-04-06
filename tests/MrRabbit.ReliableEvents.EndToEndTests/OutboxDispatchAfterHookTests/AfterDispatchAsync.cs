@@ -19,7 +19,7 @@ public class AfterDispatchAsync : ReliableEventsTestBase
     public async Task WhenDispatchThenHookAfterDispatchAsyncCalled(DatabaseProvider provider)
     {
         Initialize(provider);
-        await ReliableEvents.OutboxStore.AddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
+        await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Test.Queue], _cancellationToken);
 
