@@ -1,6 +1,6 @@
 ﻿namespace MrRabbit.ReliableEvents;
 
-public class OutboxDispatchAfterContext
+public class OutboxDispatchedContext
 {
     public required OutboxQueue Queue { get; init; }
     public required int DispatchedTasksCount { get; init; }

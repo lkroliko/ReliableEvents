@@ -33,7 +33,7 @@ This library implements the **Transactional Outbox Pattern**: events are seriali
 - 🔀 **Named queues** — isolate event processing across independent queues with `[EventHandlerQueue]`
 - 🛡️ **Concurrency control** — per-queue semaphores prevent duplicate processing
 - 📦 **External event deduplication** — optional `EventId` to detect and skip duplicate events received from external systems (e.g. SignalR, webhooks)
-- 🪝 **Dispatch hooks** — plug into the outbox lifecycle with `IOutboxDispatchAfterHook` and `IOutboxDispatchExceptionHook`
+- 🪝 **Dispatch handlers** — plug into the outbox lifecycle with `IOutboxDispatchedHandler` and `IOutboxDispatchErrorHandler`
 - 🧩 **Minimal setup** — single `AddReliableEvents<TDbContext>()` call with a fluent builder API
 - 🎯 **Convention-based registration** — auto-discover handlers from assemblies
 
@@ -449,9 +449,9 @@ services.AddReliableEvents<AppDbContext>(options =>
     options.AddEventHandler(typeof(OrderPlacedHandler));
     options.AddOutboxEventHandler(typeof(OrderConfirmedHandler));
 
-    // Register dispatch lifecycle hooks
-    options.AddOutboxDispatchAfterHook<MyAfterDispatchHook>();
-    options.AddOutboxDispatchExceptionHook<MyDispatchExceptionHook>();
+    // Register dispatch lifecycle handlers
+    options.AddOutboxDispatchedHandler<MyDispatchedHandler>();
+    options.AddOutboxDispatchErrorHandler<MyDispatchErrorHandler>();
 });
 ```
 
@@ -487,18 +487,18 @@ public interface IOutboxEventHandler<TEvent>
 }
 ```
 
-#### `IOutboxDispatchAfterHook`
+#### `IOutboxDispatchedHandler`
 
-Implement to execute logic **after** a queue has been successfully dispatched (i.e. at least one outbox task was processed). The hook receives an `OutboxDispatchAfterContext` containing the queue and the number of dispatched tasks. Multiple hooks can be registered — they are invoked sequentially.
+Implement to execute logic **after** a queue has been successfully dispatched (i.e. at least one outbox task was processed). The handler receives an `OutboxDispatchedContext` containing the queue and the number of dispatched tasks. Multiple handlers can be registered — they are invoked sequentially.
 
 ```csharp
-public interface IOutboxDispatchAfterHook
+public interface IOutboxDispatchedHandler
 {
-    Task AfterDispatchAsync(OutboxDispatchAfterContext context);
+    Task HandleAsync(OutboxDispatchedContext context);
 }
 ```
 
-**`OutboxDispatchAfterContext`**
+**`OutboxDispatchedContext`**
 
 | Property | Type | Description |
 |---|---|---|
@@ -508,16 +508,16 @@ public interface IOutboxDispatchAfterHook
 **Example:**
 
 ```csharp
-public class LoggingAfterDispatchHook : IOutboxDispatchAfterHook
+public class LoggingDispatchedHandler : IOutboxDispatchedHandler
 {
-    private readonly ILogger<LoggingAfterDispatchHook> _logger;
+    private readonly ILogger<LoggingDispatchedHandler> _logger;
 
-    public LoggingAfterDispatchHook(ILogger<LoggingAfterDispatchHook> logger)
+    public LoggingDispatchedHandler(ILogger<LoggingDispatchedHandler> logger)
     {
         _logger = logger;
     }
 
-    public Task AfterDispatchAsync(OutboxDispatchAfterContext context)
+    public Task HandleAsync(OutboxDispatchedContext context)
     {
         _logger.LogInformation(
             "Queue '{Queue}' dispatched {Count} task(s).",
@@ -527,18 +527,18 @@ public class LoggingAfterDispatchHook : IOutboxDispatchAfterHook
 }
 ```
 
-#### `IOutboxDispatchExceptionHook`
+#### `IOutboxDispatchErrorHandler`
 
-Implement to execute logic when an `IOutboxEventHandler<T>` throws an exception during dispatch. The hook receives an `OutboxDispatchExceptionContext` containing the queue and the exception. This is invoked **before** the `DispatchResult` is returned to the caller. Multiple hooks can be registered — they are invoked sequentially.
+Implement to execute logic when an `IOutboxEventHandler<T>` throws an exception during dispatch. The handler receives an `OutboxDispatchErrorContext` containing the queue and the exception. This is invoked **before** the `DispatchResult` is returned to the caller. Multiple handlers can be registered — they are invoked sequentially.
 
 ```csharp
-public interface IOutboxDispatchExceptionHook
+public interface IOutboxDispatchErrorHandler
 {
-    Task OnDispatchExceptionAsync(OutboxDispatchExceptionContext context);
+    Task HandleAsync(OutboxDispatchErrorContext context);
 }
 ```
 
-**`OutboxDispatchExceptionContext`**
+**`OutboxDispatchErrorContext`**
 
 | Property | Type | Description |
 |---|---|---|
@@ -548,16 +548,16 @@ public interface IOutboxDispatchExceptionHook
 **Example:**
 
 ```csharp
-public class AlertingExceptionHook : IOutboxDispatchExceptionHook
+public class AlertingDispatchErrorHandler : IOutboxDispatchErrorHandler
 {
-    private readonly ILogger<AlertingExceptionHook> _logger;
+    private readonly ILogger<AlertingDispatchErrorHandler> _logger;
 
-    public AlertingExceptionHook(ILogger<AlertingExceptionHook> logger)
+    public AlertingDispatchErrorHandler(ILogger<AlertingDispatchErrorHandler> logger)
     {
         _logger = logger;
     }
 
-    public Task OnDispatchExceptionAsync(OutboxDispatchExceptionContext context)
+    public Task HandleAsync(OutboxDispatchErrorContext context)
     {
         _logger.LogError(
             context.Exception,
@@ -676,27 +676,27 @@ If an `IOutboxEventHandler<T>` throws an exception, the **entire queue stops pro
 
 > **💡 Tip:** Since a failing handler blocks all subsequent tasks in the same queue, keep handler logic resilient (e.g. wrap external calls in try/catch with logging) or isolate critical handlers into separate queues so a failure in one does not stall others.
 
-### Dispatch Hooks
+### Dispatch Handlers
 
-Dispatch hooks let you plug into the outbox dispatcher lifecycle without modifying handler logic. Two hook interfaces are available:
+Dispatch handlers let you plug into the outbox dispatcher lifecycle without modifying event handler logic. Two handler interfaces are available:
 
-| Hook | When it runs | Use cases |
+| Handler | When it runs | Use cases |
 |---|---|---|
-| `IOutboxDispatchAfterHook` | After a queue finishes dispatching (at least one task was processed successfully) | Logging, metrics, triggering downstream workflows |
-| `IOutboxDispatchExceptionHook` | When an outbox handler throws an exception (before the `DispatchResult` is returned) | Alerting, error logging, dead-letter tracking |
+| `IOutboxDispatchedHandler` | After a queue finishes dispatching (at least one task was processed successfully) | Logging, metrics, triggering downstream workflows |
+| `IOutboxDispatchErrorHandler` | When an outbox event handler throws an exception (before the `DispatchResult` is returned) | Alerting, error logging, dead-letter tracking |
 
-Hooks are registered via the builder API:
+Handlers are registered via the builder API:
 
 ```csharp
 services.AddReliableEvents<AppDbContext>(options =>
 {
     options.AddOutboxEventHandlers(typeof(Program).Assembly);
-    options.AddOutboxDispatchAfterHook<LoggingAfterDispatchHook>();
-    options.AddOutboxDispatchExceptionHook<AlertingExceptionHook>();
+    options.AddOutboxDispatchedHandler<LoggingDispatchedHandler>();
+    options.AddOutboxDispatchErrorHandler<AlertingDispatchErrorHandler>();
 });
 ```
 
-Multiple hooks of the same type can be registered — they are invoked sequentially in registration order. If a hook itself throws an exception, it is wrapped in a `ReliableEventsException`.
+Multiple handlers of the same type can be registered — they are invoked sequentially in registration order. If a handler itself throws an exception, it is wrapped in a `ReliableEventsException`.
 
 ## License
 

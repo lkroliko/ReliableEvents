@@ -69,16 +69,16 @@ public class ReliableEventsOptionsBuilder
         return this;
     }
 
-    public ReliableEventsOptionsBuilder AddOutboxDispatchAfterHook<TOutboxDispatchPostHook>() where TOutboxDispatchPostHook : class, IOutboxDispatchAfterHook
+    public ReliableEventsOptionsBuilder AddOutboxDispatchedHandler<TOutboxDispatchedHandler>() where TOutboxDispatchedHandler : class, IOutboxDispatchedHandler
     {
-        _services.AddScoped<IOutboxDispatchAfterHook, TOutboxDispatchPostHook>();
+        _services.AddScoped<IOutboxDispatchedHandler, TOutboxDispatchedHandler>();
 
         return this;
     }
 
-    public ReliableEventsOptionsBuilder AddOutboxDispatchExceptionHook<TOutboxDispatchExceptionHook>() where TOutboxDispatchExceptionHook : class, IOutboxDispatchExceptionHook
+    public ReliableEventsOptionsBuilder AddOutboxDispatchErrorHandler<TOutboxDispatchErrorHandler>() where TOutboxDispatchErrorHandler : class, IOutboxDispatchErrorHandler
     {
-        _services.AddScoped<IOutboxDispatchExceptionHook, TOutboxDispatchExceptionHook>();
+        _services.AddScoped<IOutboxDispatchErrorHandler, TOutboxDispatchErrorHandler>();
 
         return this;
     }

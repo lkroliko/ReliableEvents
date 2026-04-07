@@ -6,9 +6,9 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IOutboxQueueSemaphoreProvider<TDbContext> _semaphoreProvider;
-    private readonly IOutboxDispatchHookInvoker _hookInvoker;
+    private readonly IOutboxHandlerInvoker _hookInvoker;
 
-    public QueueOutboxDispatcher(IServiceProvider serviceProvider, IOutboxQueueSemaphoreProvider<TDbContext> SemaphoreProvider, IOutboxDispatchHookInvoker hookInvoker)
+    public QueueOutboxDispatcher(IServiceProvider serviceProvider, IOutboxQueueSemaphoreProvider<TDbContext> SemaphoreProvider, IOutboxHandlerInvoker hookInvoker)
     {
         _serviceProvider = serviceProvider;
         _semaphoreProvider = SemaphoreProvider;
@@ -34,7 +34,7 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
                 var result = await worker.DispatchAsync(queue, outboxTask, cancellationToken);
                 if (result.IsFailed)
                 {
-                    await _hookInvoker.InvokeExceptionHooksAsync(result);
+                    await _hookInvoker.InvokeDispatchErrorHandlerAsync(result);
                     return result;
                 }
 
@@ -56,7 +56,7 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
         {
             semapthore.Release();
             if (dispatchedTasksCount > 0)
-                await _hookInvoker.InvokeAfterHooksAsync(queue, dispatchedTasksCount);
+                await _hookInvoker.InvokeDispatchedHandlerAsync(queue, dispatchedTasksCount);
         }
 
         return DispatchResult.Ok(queue);

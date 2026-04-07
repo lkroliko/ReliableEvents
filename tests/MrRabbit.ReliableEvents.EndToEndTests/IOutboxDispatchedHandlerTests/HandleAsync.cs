@@ -1,17 +1,17 @@
-﻿namespace MrRabbit.ReliableEvents.EndToEndTests.OutboxDispatchAfterHookTests;
+﻿namespace MrRabbit.ReliableEvents.EndToEndTests.IOutboxDispatchedHandlerTests;
 
-[Trait("Category", "OutboxDispatchAfterHook")]
-public class AfterDispatchAsync : ReliableEventsTestBase
+[Trait("Category", "OutboxDispatchedHandler")]
+public class HandleAsync : ReliableEventsTestBase
 {
     private readonly OutboxEventForQueue1 _event = A.Fixture.Create<OutboxEventForQueue1>();
-    private readonly IOutboxDispatchAfterHook _hook = Mock.Of<IOutboxDispatchAfterHook>();
+    private readonly IOutboxDispatchedHandler _dispatchedHandler = Mock.Of<IOutboxDispatchedHandler>();
     private readonly CancellationToken _cancellationToken;
 
-    public AfterDispatchAsync(DatabaseFixture fixture) : base(fixture) { }
+    public HandleAsync(DatabaseFixture fixture) : base(fixture) { }
 
     protected override void ConfigureServiceProvider(IServiceCollection services)
     {
-        services.AddSingleton(_hook);
+        services.AddSingleton(_dispatchedHandler);
     }
 
     [Theory]
@@ -23,6 +23,6 @@ public class AfterDispatchAsync : ReliableEventsTestBase
 
         await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue], _cancellationToken);
 
-        Mock.Get(_hook).Verify(h => h.AfterDispatchAsync(It.Is<OutboxDispatchAfterContext>(c => c.Queue.Name == TestConsts.Queues.Queue1.Name && c.DispatchedTasksCount == 1)), Times.Once);
+        Mock.Get(_dispatchedHandler).Verify(h => h.HandleAsync(It.Is<OutboxDispatchedContext>(c => c.Queue.Name == TestConsts.Queues.Queue1.Name && c.DispatchedTasksCount == 1)), Times.Once);
     }
 }
