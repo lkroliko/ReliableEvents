@@ -35,7 +35,7 @@ public abstract class ReliableEventsTestBase
 
         AddDbContext(services, provider);
         ConfigureServiceProvider(services);
-        Services = services.BuildServiceProvider();
+        Services = services.BuildServiceProvider(true);
         RecreateDatabase();
     }
 

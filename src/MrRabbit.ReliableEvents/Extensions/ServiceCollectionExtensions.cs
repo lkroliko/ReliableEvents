@@ -13,11 +13,11 @@ public static class ServiceCollectionExtensions
         var optionsBuilder = new ReliableEventsOptionsBuilder(services);
         optionsAction.Invoke(optionsBuilder);
 
-        services.AddSingleton<IDispatcher, Dispatcher>();
+        services.AddScoped<IDispatcher, Dispatcher>();
         services.AddScoped(typeof(IReliableEvents<TDbContext>), typeof(ReliableEvents<TDbContext>));
         services.AddSingleton<ISerializer, JsonSerializer>();
         services.AddSingleton(typeof(IHandlerMetadataProvider<TDbContext>), _ => new HandlerMetadataProvider<TDbContext>(optionsBuilder.OutboxHandlerTypes));
-        services.AddSingleton<IOutboxDispatcherWorker, OutboxDispatcherWorker>();
+        services.AddScoped<IOutboxDispatcherWorker, OutboxDispatcherWorker>();
         services.AddSingleton<IOutboxDispatcher<TDbContext>, OutboxDispatcher<TDbContext>>();
         services.AddScoped<IQueueOutboxDispatcher<TDbContext>, QueueOutboxDispatcher<TDbContext>>();
         services.AddScoped<IOutboxStore<TDbContext>, OutboxStore<TDbContext>>();

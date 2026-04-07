@@ -5,11 +5,11 @@ public class HandleAsync : ReliableEventsTestBase
 {
     private readonly OutboxEventForQueue1 _event = A.Fixture.Create<OutboxEventForQueue1>();
     private readonly IOutboxDispatchedHandler _dispatchedHandler = Mock.Of<IOutboxDispatchedHandler>();
-    private readonly CancellationToken _cancellationToken;
+    private readonly CancellationToken _cancellationToken = CancellationToken.None;
 
     public HandleAsync(DatabaseFixture fixture) : base(fixture) { }
 
-    protected override void ConfigureServiceProvider(IServiceCollection services)
+    override protected void ConfigureServiceProvider(IServiceCollection services)
     {
         services.AddSingleton(_dispatchedHandler);
     }

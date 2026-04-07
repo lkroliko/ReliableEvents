@@ -6,12 +6,12 @@ public class HandleAsync : ReliableEventsTestBase
     private readonly OutboxEventForQueue1 _event = A.Fixture.Create<OutboxEventForQueue1>();
     private readonly OutboxEventHandlerForQueue1 _handler = Mock.Of<OutboxEventHandlerForQueue1>();
     private readonly IOutboxDispatchErrorHandler _errroHandler = Mock.Of<IOutboxDispatchErrorHandler>();
-    private readonly CancellationToken _cancellationToken;
-    private readonly Exception _exception = new Exception();
+    private readonly CancellationToken _cancellationToken = CancellationToken.None;
+    private readonly Exception _exception = new();
 
     public HandleAsync(DatabaseFixture fixture) : base(fixture) { }
 
-    protected override void ConfigureServiceProvider(IServiceCollection services)
+    override protected void ConfigureServiceProvider(IServiceCollection services)
     {
         services.RemoveImplementedType<OutboxEventHandlerForQueue1>();
         services.AddScoped(_ => _handler);

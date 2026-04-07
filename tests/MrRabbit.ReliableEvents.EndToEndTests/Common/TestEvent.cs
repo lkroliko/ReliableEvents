@@ -1,4 +1,5 @@
-﻿namespace MrRabbit.ReliableEvents.EndToEndTests.Common;
+﻿
+namespace MrRabbit.ReliableEvents.EndToEndTests.Common;
 
 internal class TestEvent : DomainEventBase
 {

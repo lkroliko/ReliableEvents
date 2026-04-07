@@ -21,7 +21,7 @@ internal class OutboxDispatcherWorker : IOutboxDispatcherWorker
         var methodInfo = handlerType.GetMethod(nameof(IOutboxEventHandler<>.HandleAsync));
         try
         {
-            await (Task)methodInfo.Invoke(handler, new[] { @event, cancellationToken })!;
+            await (Task)methodInfo!.Invoke(handler, [@event, cancellationToken])!;
         }
         catch (Exception ex)
         {

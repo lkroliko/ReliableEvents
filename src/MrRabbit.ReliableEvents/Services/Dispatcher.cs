@@ -23,7 +23,7 @@ internal class Dispatcher : IDispatcher
             foreach (var handler in handlers)
             {
                 var handleMethod = handlerType.GetMethod(nameof(IEventHandler<>.HandleAsync));
-                var task = (Task)handleMethod!.Invoke(handler, new object[] { @event, cancellationToken })!;
+                var task = (Task)handleMethod!.Invoke(handler, [@event, cancellationToken])!;
                 await task;
             }
         }

@@ -1,14 +1,14 @@
 ﻿namespace MrRabbit.ReliableEvents.EndToEndTests.OutboxDispatcherTests;
 
 [Trait("Category", "OutboxDispatcher")]
-public class DispatchAsync_Queues : ReliableEventsTestBase
+public class DispatchAsync_Queue : ReliableEventsTestBase
 {
     private readonly OutboxEventForQueue1 _event = A.Fixture.Create<OutboxEventForQueue1>();
     private readonly OutboxEventHandlerForQueue1 _handler = Mock.Of<OutboxEventHandlerForQueue1>();
     private readonly CancellationToken _cancellationToken = CancellationToken.None;
     private readonly Exception _handlerException = new();
 
-    public DispatchAsync_Queues(DatabaseFixture fixture) : base(fixture) { }
+    public DispatchAsync_Queue(DatabaseFixture fixture) : base(fixture) { }
 
     override protected void ConfigureServiceProvider(IServiceCollection services)
     {
@@ -23,7 +23,7 @@ public class DispatchAsync_Queues : ReliableEventsTestBase
         Initialize(provider);
         await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
-        await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue], _cancellationToken);
+        await ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken);
 
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<OutboxEventForQueue1>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -36,10 +36,10 @@ public class DispatchAsync_Queues : ReliableEventsTestBase
         await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
         await Task.WhenAll(
-            [
-            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue]), _cancellationToken),
-            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue]), _cancellationToken),
-            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue]), _cancellationToken)
+        [
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken)),
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken)),
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken))
         ]);
 
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<OutboxEventForQueue1>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Once);
@@ -55,9 +55,9 @@ public class DispatchAsync_Queues : ReliableEventsTestBase
 
         await Task.WhenAll(
         [
-            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue]), _cancellationToken),
-            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue]), _cancellationToken),
-            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue]), _cancellationToken)
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken)),
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken)),
+            Task.Run(() => ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken))
         ]);
 
         Mock.Get(_handler).Verify(h => h.HandleAsync(It.Is<OutboxEventForQueue1>(e => e.Data == _event.Data), It.IsAny<CancellationToken>()), Times.Exactly(3));
@@ -70,10 +70,10 @@ public class DispatchAsync_Queues : ReliableEventsTestBase
         Initialize(provider);
         await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
-        var result = await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue], _cancellationToken);
+        var result = await ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken);
 
-        result.Should().HaveCount(1);
-        result.Should().ContainSingle(r => r.IsSuccess && r.Queue == TestConsts.Queues.Queue1.Queue);
+        result.Queue.Should().Be(TestConsts.Queues.Queue1.Queue);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Theory]
@@ -84,9 +84,10 @@ public class DispatchAsync_Queues : ReliableEventsTestBase
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<OutboxEventForQueue1>(), It.IsAny<CancellationToken>())).ThrowsAsync(_handlerException);
         await ReliableEvents.OutboxStore.TryAddEventAsync(_event, _event.EventId, _event.OccurredDate, _cancellationToken);
 
-        var result = await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue], _cancellationToken);
+        var result = await ReliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken);
 
-        result.Should().HaveCount(1);
-        result.Should().ContainSingle(r => r.IsFailed && r.Exception == _handlerException && r.Queue == TestConsts.Queues.Queue1.Queue);
+        result.IsSuccess.Should().BeFalse();
+        result.Queue.Should().Be(TestConsts.Queues.Queue1.Queue);
+        result.Exception.Should().Be(_handlerException);
     }
 }

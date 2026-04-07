@@ -3,8 +3,8 @@
 [Trait("Category", "OutboxStore")]
 public class AddEventsAsync : ReliableEventsTestBase
 {
-    private readonly OutboxEventForQueue1[] _events = A.Fixture.CreateMany<OutboxEventForQueue1>(2).ToArray();
-    private readonly CancellationToken _cancellationToken;
+    private readonly OutboxEventForQueue1[] _events = [.. A.Fixture.CreateMany<OutboxEventForQueue1>(2)];
+    private readonly CancellationToken _cancellationToken = CancellationToken.None;
 
     public AddEventsAsync(DatabaseFixture fixture) : base(fixture) { }
 

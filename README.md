@@ -403,7 +403,7 @@ public class OrderService
 | Component | Interface | Scope | Description |
 |---|---|---|---|
 | **ReliableEvents** | `IReliableEvents<TDbContext>` | Scoped | The main entry point — aggregates `IDispatcher`, `IOutboxStore`, and `IOutboxDispatcher` into a single injectable service. |
-| **Dispatcher** | `IDispatcher` | Singleton | Resolves and invokes all `IEventHandler<T>` implementations for a given set of events in-memory. |
+| **Dispatcher** | `IDispatcher` | Scoped | Resolves and invokes all `IEventHandler<T>` implementations for a given set of events in-memory. |
 | **Outbox Store** | `IOutboxStore<TDbContext>` | Scoped | Serializes events and attaches them as `OutboxTask` entities to the current EF Core change tracker. Events are committed with your `SaveChanges` call. |
 | **Outbox Dispatcher** | `IOutboxDispatcher<TDbContext>` | Singleton | Processes all queues in parallel. Each queue is processed sequentially (oldest-first) with per-queue semaphore locking. |
 

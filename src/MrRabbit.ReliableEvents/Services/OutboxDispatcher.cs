@@ -4,17 +4,22 @@ namespace MrRabbit.ReliableEvents.Services;
 
 internal class OutboxDispatcher<TDbContext> : IOutboxDispatcher<TDbContext> where TDbContext : DbContext
 {
-    private readonly IQueueOutboxDispatcher<TDbContext> _outboxDispatcherWorker;
     private readonly IServiceProvider _serviceProvider;
 
-    public OutboxDispatcher(IQueueOutboxDispatcher<TDbContext> outboxDispatcherWorker, IServiceProvider serviceProvider)
+    public OutboxDispatcher(IServiceProvider serviceProvider)
     {
-        _outboxDispatcherWorker = outboxDispatcherWorker;
         _serviceProvider = serviceProvider;
     }
 
     public async Task<DispatchResult[]> DispatchAsync(IEnumerable<OutboxQueue> queues, CancellationToken cancellationToken) =>
-        await Task.WhenAll(queues.Select(queue => _outboxDispatcherWorker.DispatchAsync(queue, cancellationToken)));
+        await Task.WhenAll(queues.Select(queue => DispatchAsync(queue, cancellationToken)));
+
+    public async Task<DispatchResult> DispatchAsync(OutboxQueue queue, CancellationToken cancellationToken)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var queueOutboxDispatcher = scope.ServiceProvider.GetRequiredService<IQueueOutboxDispatcher<TDbContext>>();
+        return await queueOutboxDispatcher.DispatchAsync(queue, cancellationToken);
+    }
 
     public async Task<DispatchResult[]> DispatchAsync(CancellationToken cancellationToken)
     {
