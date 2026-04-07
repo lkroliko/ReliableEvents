@@ -20,7 +20,7 @@ internal class OutboxDispatcher<TDbContext> : IOutboxDispatcher<TDbContext> wher
     {
         using var scope = _serviceProvider.CreateScope();
         var _unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork<TDbContext>>();
-        var queues = await _unitOfWork.Repository.GetQueuesAsync();
+        var queues = await _unitOfWork.Repository.GetQueuesToDispatchAsync();
         return await DispatchAsync(queues.Select(w => new OutboxQueue(w)), cancellationToken);
     }
 }
