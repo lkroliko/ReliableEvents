@@ -3,7 +3,7 @@
 [Trait("Category", "OutboxStore")]
 public class AddEventsAsync : ReliableEventsTestBase
 {
-    private readonly TestOutboxEvent[] _events = A.Fixture.CreateMany<TestOutboxEvent>(2).ToArray();
+    private readonly OutboxEventForQueue1[] _events = A.Fixture.CreateMany<OutboxEventForQueue1>(2).ToArray();
     private readonly CancellationToken _cancellationToken;
 
     public AddEventsAsync(DatabaseFixture fixture) : base(fixture) { }
@@ -18,12 +18,12 @@ public class AddEventsAsync : ReliableEventsTestBase
 
         var outboxTasks = DbContext.Set<OutboxTask>().ToList();
         outboxTasks.Should().HaveCount(_events.Length);
-        outboxTasks.Should().AllSatisfy(x => x.QueueName.Should().Be(TestConsts.Queues.Test.Name));
-        outboxTasks.Should().AllSatisfy(x => x.QueueName.Should().Be(TestConsts.Queues.Test.Name));
+        outboxTasks.Should().AllSatisfy(x => x.QueueName.Should().Be(TestConsts.Queues.Queue1.Name));
+        outboxTasks.Should().AllSatisfy(x => x.QueueName.Should().Be(TestConsts.Queues.Queue1.Name));
         outboxTasks.Should().AllSatisfy(x => x.HandlerAssemblyName.Should().Be(TestConsts.Assembly.Name));
-        outboxTasks.Should().AllSatisfy(x => x.HandlerFullName.Should().Contain(nameof(TestOutboxEventHandler)));
+        outboxTasks.Should().AllSatisfy(x => x.HandlerFullName.Should().Contain(nameof(OutboxEventHandlerForQueue1)));
         outboxTasks.Should().AllSatisfy(x => x.EventAssemblyName.Should().Be(TestConsts.Assembly.Name));
-        outboxTasks.Should().AllSatisfy(x => x.EventFullName.Should().Contain(nameof(TestOutboxEvent)));
+        outboxTasks.Should().AllSatisfy(x => x.EventFullName.Should().Contain(nameof(OutboxEventForQueue1)));
         outboxTasks.Should().AllSatisfy(x => x.IsDispatched.Should().BeFalse());
         outboxTasks.Should().AllSatisfy(x => x.Id.Should().NotBeEmpty());
         outboxTasks.Should().Contain(x => x.EventId == _events[0].EventId && x.OccurredDate == _events[0].OccurredDate && x.EventData.Contains(_events[0].Data));
@@ -42,12 +42,12 @@ public class AddEventsAsync : ReliableEventsTestBase
 
         var outboxTasks = DbContext.Set<OutboxTask>().ToList();
         outboxTasks.Should().HaveCount(_events.Length);
-        outboxTasks.Should().AllSatisfy(x => x.QueueName.Should().Be(TestConsts.Queues.Test.Name));
-        outboxTasks.Should().AllSatisfy(x => x.QueueName.Should().Be(TestConsts.Queues.Test.Name));
+        outboxTasks.Should().AllSatisfy(x => x.QueueName.Should().Be(TestConsts.Queues.Queue1.Name));
+        outboxTasks.Should().AllSatisfy(x => x.QueueName.Should().Be(TestConsts.Queues.Queue1.Name));
         outboxTasks.Should().AllSatisfy(x => x.HandlerAssemblyName.Should().Be(TestConsts.Assembly.Name));
-        outboxTasks.Should().AllSatisfy(x => x.HandlerFullName.Should().Contain(nameof(TestOutboxEventHandler)));
+        outboxTasks.Should().AllSatisfy(x => x.HandlerFullName.Should().Contain(nameof(OutboxEventHandlerForQueue1)));
         outboxTasks.Should().AllSatisfy(x => x.EventAssemblyName.Should().Be(TestConsts.Assembly.Name));
-        outboxTasks.Should().AllSatisfy(x => x.EventFullName.Should().Contain(nameof(TestOutboxEvent)));
+        outboxTasks.Should().AllSatisfy(x => x.EventFullName.Should().Contain(nameof(OutboxEventForQueue1)));
         outboxTasks.Should().AllSatisfy(x => x.IsDispatched.Should().BeFalse());
         outboxTasks.Should().AllSatisfy(x => x.Id.Should().NotBeEmpty());
         outboxTasks.Should().Contain(x => x.EventId == _events[0].EventId && x.OccurredDate == _events[0].OccurredDate && x.EventData.Contains(_events[0].Data));

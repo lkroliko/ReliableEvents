@@ -185,8 +185,8 @@ public class OutboxDispatcherJob : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            // Retry dispatching for all known queues
-            await _outboxDispatcher.DispatchAsync([new OutboxQueue("orders")]);
+            // Retry dispatching for all queues discovered from the database
+            await _outboxDispatcher.DispatchAsync(stoppingToken);
 
             await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
         }
@@ -602,7 +602,8 @@ The main entry point, providing access to all three subsystems:
 
 | Method | Description |
 |---|---|
-| `DispatchAsync(IEnumerable<OutboxQueue>)` | Dispatches all pending tasks across the given queues. Returns `DispatchResult[]`. |
+| `DispatchAsync(IEnumerable<OutboxQueue>, CancellationToken)` | Dispatches all pending tasks across the given queues. Returns `DispatchResult[]`. |
+| `DispatchAsync(CancellationToken)` | Auto-discovers all queues from the database and dispatches all pending tasks. Returns `DispatchResult[]`. |
 
 ### `DispatchResult`
 

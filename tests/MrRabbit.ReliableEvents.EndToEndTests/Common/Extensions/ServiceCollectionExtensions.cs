@@ -7,4 +7,10 @@ internal static class ServiceCollectionExtensions
         var descriptor = services.First(x => x.ImplementationType == typeof(T));
         services.Remove(descriptor);
     }
+
+    internal static void RemoveImplementedType(this IServiceCollection services, Type type)
+    {
+        var descriptor = services.First(x => x.ImplementationType == type);
+        services.Remove(descriptor);
+    }
 }

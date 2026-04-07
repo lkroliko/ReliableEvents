@@ -21,4 +21,7 @@ internal sealed class Repository : IRepository
 
     public async Task<bool> AnyAsync(string eventId, CancellationToken cancellationToken = default) =>
         await _dbContext.Set<OutboxTask>().AnyAsync(x => x.EventId == eventId, cancellationToken);
+
+    public async Task<List<string>> GetQueuesAsync() =>
+        await _dbContext.Set<OutboxTask>().Select(t => t.QueueName).Distinct().ToListAsync();
 }

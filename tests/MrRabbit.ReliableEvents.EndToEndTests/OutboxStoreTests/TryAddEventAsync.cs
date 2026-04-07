@@ -3,7 +3,7 @@
 [Trait("Category", "OutboxStore")]
 public class TryAddEventAsync : ReliableEventsTestBase
 {
-    private readonly TestOutboxEvent _event = A.Fixture.Create<TestOutboxEvent>();
+    private readonly OutboxEventForQueue1 _event = A.Fixture.Create<OutboxEventForQueue1>();
     private readonly CancellationToken _cancellationToken;
 
     public TryAddEventAsync(DatabaseFixture fixture) : base(fixture) { }
@@ -19,11 +19,11 @@ public class TryAddEventAsync : ReliableEventsTestBase
         var outboxTask = DbContext.Set<OutboxTask>().Single();
         outboxTask.EventId.Should().Be(_event.EventId);
         outboxTask.OccurredDate.Should().Be(_event.OccurredDate);
-        outboxTask.QueueName.Should().Be(TestConsts.Queues.Test.Name);
+        outboxTask.QueueName.Should().Be(TestConsts.Queues.Queue1.Name);
         outboxTask.HandlerAssemblyName.Should().Be(TestConsts.Assembly.Name);
-        outboxTask.HandlerFullName.Should().Contain(nameof(TestOutboxEventHandler));
+        outboxTask.HandlerFullName.Should().Contain(nameof(OutboxEventHandlerForQueue1));
         outboxTask.EventAssemblyName.Should().Be(TestConsts.Assembly.Name);
-        outboxTask.EventFullName.Should().Contain(nameof(TestOutboxEvent));
+        outboxTask.EventFullName.Should().Contain(nameof(OutboxEventForQueue1));
         outboxTask.EventData.Should().Contain(_event.Data);
         outboxTask.IsDispatched.Should().BeFalse();
         outboxTask.Id.Should().NotBeEmpty();
@@ -41,11 +41,11 @@ public class TryAddEventAsync : ReliableEventsTestBase
         var outboxTask = DbContext.Set<OutboxTask>().Single();
         outboxTask.EventId.Should().Be(_event.EventId);
         outboxTask.OccurredDate.Should().Be(_event.OccurredDate);
-        outboxTask.QueueName.Should().Be(TestConsts.Queues.Test.Name);
+        outboxTask.QueueName.Should().Be(TestConsts.Queues.Queue1.Name);
         outboxTask.HandlerAssemblyName.Should().Be(TestConsts.Assembly.Name);
-        outboxTask.HandlerFullName.Should().Contain(nameof(TestOutboxEventHandler));
+        outboxTask.HandlerFullName.Should().Contain(nameof(OutboxEventHandlerForQueue1));
         outboxTask.EventAssemblyName.Should().Be(TestConsts.Assembly.Name);
-        outboxTask.EventFullName.Should().Contain(nameof(TestOutboxEvent));
+        outboxTask.EventFullName.Should().Contain(nameof(OutboxEventForQueue1));
         outboxTask.EventData.Should().Contain(_event.Data);
         outboxTask.IsDispatched.Should().BeFalse();
         outboxTask.Id.Should().NotBeEmpty();
