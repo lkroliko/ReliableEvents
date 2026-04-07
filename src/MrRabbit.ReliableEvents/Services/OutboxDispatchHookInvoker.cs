@@ -6,7 +6,7 @@ internal class OutboxDispatchHookInvoker : IOutboxDispatchHookInvoker
 {
     private readonly IServiceProvider _serviceProvider;
 
-    public OutboxDispatchHookInvoker(IEnumerable<IOutboxDispatchAfterHook> postHooks, IServiceProvider serviceProvider)
+    public OutboxDispatchHookInvoker(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
@@ -26,7 +26,7 @@ internal class OutboxDispatchHookInvoker : IOutboxDispatchHookInvoker
         }
         catch (Exception ex)
         {
-            throw new ReliableEventsException("An error occurred while running 'IAfterOutboxDispatchHook'.", ex);
+            throw new ReliableEventsException($"An error occurred while running '{nameof(IOutboxDispatchAfterHook)}'.", ex);
         }
     }
 
@@ -45,7 +45,7 @@ internal class OutboxDispatchHookInvoker : IOutboxDispatchHookInvoker
         }
         catch (Exception ex)
         {
-            throw new ReliableEventsException("An exception occurred while handling an IOutboxDispatchExceptionHandler.", ex);
+            throw new ReliableEventsException($"An exception occurred while handling an '{nameof(IOutboxDispatchExceptionHook)}'.", ex);
         }
     }
 }
