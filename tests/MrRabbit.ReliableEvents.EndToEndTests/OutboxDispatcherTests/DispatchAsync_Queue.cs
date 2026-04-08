@@ -78,7 +78,7 @@ public class DispatchAsync_Queue : ReliableEventsTestBase
 
     [Theory]
     [DatabaseProviders]
-    public async Task WhenNotDispatchedThrowResultIsValid(DatabaseProvider provider)
+    public async Task WhenNotDispatchedThenResultIsValid(DatabaseProvider provider)
     {
         Initialize(provider);
         Mock.Get(_handler).Setup(h => h.HandleAsync(It.IsAny<OutboxEventForQueue1>(), It.IsAny<CancellationToken>())).ThrowsAsync(_handlerException);
@@ -89,5 +89,27 @@ public class DispatchAsync_Queue : ReliableEventsTestBase
         result.IsSuccess.Should().BeFalse();
         result.Queue.Should().Be(TestConsts.Queues.Queue1.Queue);
         result.Exception.Should().Be(_handlerException);
+    }
+
+    [Theory]
+    [DatabaseProviders]
+    public async Task WhenDispatchInDbContextScopeThenResultIsValid(DatabaseProvider provider)
+    {
+        Initialize(provider);
+        {
+            using var scope = Services.CreateScope();
+            var reliableEvents = scope.ServiceProvider.GetRequiredService<IReliableEvents<TestDbContext>>();
+            reliableEvents.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
+            var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            dbContext.SaveChanges();
+
+            var _ = Task.Run(async () => await reliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, CancellationToken.None)).ConfigureAwait(false);
+        }
+        //TODO do werfikacji
+        await Task.Delay(200);
+        ///var result = await reliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken);
+
+        var outboxTask = DbContext.Set<OutboxTask>().Single();
+        outboxTask.IsDispatched.Should().BeTrue();
     }
 }

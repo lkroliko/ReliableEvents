@@ -15,10 +15,11 @@ internal class OutboxDispatcherWorker : IOutboxDispatcherWorker
 
     public async Task<DispatchResult> DispatchAsync(OutboxQueue queue, OutboxTask outboxTask, CancellationToken cancellationToken)
     {
-        var @event = GetEvent();
+        var eventType = GetEventType();
+        var @event = GetEvent(eventType);
         var handlerType = GetHandlerType();
         var handler = GetHandler();
-        var methodInfo = handlerType.GetMethod(nameof(IOutboxEventHandler<>.HandleAsync));//TODO problem gdy ma kilka metod
+        var methodInfo = handlerType.GetMethod(nameof(IOutboxEventHandler<>.HandleAsync), [eventType, typeof(CancellationToken)]);
         try
         {
             await (Task)methodInfo!.Invoke(handler, [@event, cancellationToken])!;
@@ -29,11 +30,15 @@ internal class OutboxDispatcherWorker : IOutboxDispatcherWorker
         }
         return DispatchResult.Ok(queue);
 
-        object GetEvent()
+        Type GetEventType()
         {
             var typeName = $"{outboxTask.EventFullName}, {outboxTask.EventAssemblyName}";
-            var eventType = Type.GetType(typeName) ?? throw new ReliableEventsException($"Event type '{typeName}' not found.");
-            return _serializer.Deserialize(outboxTask.EventData, eventType) ?? throw new ReliableEventsException($"Failed to deserialize event data for type '{typeName}'.");
+            return Type.GetType(typeName) ?? throw new ReliableEventsException($"Event type '{typeName}' not found.");
+        }
+
+        object GetEvent(Type type)
+        {
+            return _serializer.Deserialize(outboxTask.EventData, type) ?? throw new ReliableEventsException($"Failed to deserialize event data for type '{type.Name}'.");
         }
 
         Type GetHandlerType()

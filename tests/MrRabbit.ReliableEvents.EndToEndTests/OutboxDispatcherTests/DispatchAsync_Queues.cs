@@ -89,4 +89,21 @@ public class DispatchAsync_Queues : ReliableEventsTestBase
         result.Should().HaveCount(1);
         result.Should().ContainSingle(r => r.IsFailed && r.Exception == _handlerException && r.Queue == TestConsts.Queues.Queue1.Queue);
     }
+
+    [Theory]
+    [DatabaseProviders]
+    public async Task WhenDispatchInDbContextScopeThenResultIsValid(DatabaseProvider provider)
+    {
+        Initialize(provider);
+        var scope = Services.CreateScope();
+        var reliableEvents = scope.ServiceProvider.GetRequiredService<IReliableEvents<TestDbContext>>();
+        var queues = reliableEvents.OutboxStore.AttachEvent(_event, _event.EventId, _event.OccurredDate);
+        var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+        dbContext.SaveChanges();
+
+        var result = await reliableEvents.OutboxDispatcher.DispatchAsync(queues, _cancellationToken);
+
+        result.Should().HaveCount(1);
+        result.Should().ContainSingle(r => r.IsSuccess && r.Queue == TestConsts.Queues.Queue1.Queue);
+    }
 }
