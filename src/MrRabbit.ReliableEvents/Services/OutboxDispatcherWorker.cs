@@ -18,7 +18,7 @@ internal class OutboxDispatcherWorker : IOutboxDispatcherWorker
         var @event = GetEvent();
         var handlerType = GetHandlerType();
         var handler = GetHandler();
-        var methodInfo = handlerType.GetMethod(nameof(IOutboxEventHandler<>.HandleAsync));
+        var methodInfo = handlerType.GetMethod(nameof(IOutboxEventHandler<>.HandleAsync));//TODO problem gdy ma kilka metod
         try
         {
             await (Task)methodInfo!.Invoke(handler, [@event, cancellationToken])!;

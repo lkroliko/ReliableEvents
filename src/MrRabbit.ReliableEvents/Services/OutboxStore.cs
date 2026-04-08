@@ -20,7 +20,7 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
         var outboxTasks = _outboxTaskFactory.Create(handlersMetadata, @event, eventId, occurredDate);
         _unitOfWork.Repository.AddRange(outboxTasks);
 
-        return handlersMetadata.Select(x => x.Queue).Distinct();
+        return handlersMetadata.Select(x => x.Queue).Distinct().ToArray();
     }
 
     public IEnumerable<OutboxQueue> AttachEvents<TEvent>(IEnumerable<TEvent> events, Func<TEvent, string?> eventIdFactory, Func<TEvent, DateTime> occurredDateFactory)
@@ -36,7 +36,7 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
             queues.AddRange(handlersMetadata.Select(x => x.Queue));
         }
 
-        return queues.Distinct();
+        return queues.Distinct().ToArray();
     }
 
     private void ValidateEventId(string? eventId)
@@ -85,5 +85,4 @@ internal class OutboxStore<TDbContext> : IOutboxStore<TDbContext> where TDbConte
             throw new OutboxEventAlreadyExistException(ex);
         }
     }
-
 }

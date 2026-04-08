@@ -11,6 +11,7 @@ public abstract class ReliableEventsTestBase
 
     public IReliableEvents<TestDbContext> ReliableEvents => GetScopedService<IReliableEvents<TestDbContext>>();
     public TestDbContext DbContext => GetScopedService<TestDbContext>();
+    public IOutboxStoreStatistics<TestDbContext> OutboxStoreStatistics => GetScopedService<IOutboxStoreStatistics<TestDbContext>>();
 
     private TService GetScopedService<TService>() where TService : notnull
     {

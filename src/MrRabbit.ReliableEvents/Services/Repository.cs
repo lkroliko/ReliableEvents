@@ -24,4 +24,6 @@ internal sealed class Repository : IRepository
 
     public async Task<List<string>> GetQueuesToDispatchAsync() =>
         await _dbContext.Set<OutboxTask>().Where(t => t.IsDispatched == false).Select(t => t.QueueName).Distinct().ToListAsync();
+    public async Task<List<OutboxTask>> GetNotDispatchedOutboxTasksAsync() =>
+        await _dbContext.Set<OutboxTask>().Where(t => t.IsDispatched == false).ToListAsync();
 }

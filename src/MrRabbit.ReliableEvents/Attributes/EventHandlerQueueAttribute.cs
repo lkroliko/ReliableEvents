@@ -1,4 +1,4 @@
-﻿namespace MrRabbit.ReliableEvents;
+﻿namespace MrRabbit.ReliableEvents.Attributes;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public class EventHandlerQueueAttribute : Attribute

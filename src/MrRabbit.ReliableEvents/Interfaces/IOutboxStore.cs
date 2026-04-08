@@ -8,3 +8,4 @@ public interface IOutboxStore<TDbContext> where TDbContext : DbContext
     Task<IEnumerable<OutboxQueue>> TryAddEventAsync(object @event, string eventId, DateTime occurredDate, CancellationToken cancellationToken = default);
     Task<IEnumerable<OutboxQueue>> AddEventsAsync<TEvent>(IEnumerable<TEvent> events, Func<TEvent, string> eventIdFactory, Func<TEvent, DateTime> occurredDateFactory, CancellationToken cancellationToken = default) where TEvent : notnull;
 }
+

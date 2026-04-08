@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using MrRabbit.ReliableEvents.Attributes;
+using System.Reflection;
 
 namespace MrRabbit.ReliableEvents.Services;
 

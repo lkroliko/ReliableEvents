@@ -14,7 +14,7 @@ public static class ServiceCollectionExtensions
         optionsAction.Invoke(optionsBuilder);
 
         services.AddScoped<IDispatcher, Dispatcher>();
-        services.AddScoped(typeof(IReliableEvents<TDbContext>), typeof(ReliableEvents<TDbContext>));
+        services.AddScoped<IReliableEvents<TDbContext>, ReliableEvents<TDbContext>>();
         services.AddSingleton<ISerializer, JsonSerializer>();
         services.AddSingleton(typeof(IHandlerMetadataProvider<TDbContext>), _ => new HandlerMetadataProvider<TDbContext>(optionsBuilder.OutboxHandlerTypes));
         services.AddScoped<IOutboxDispatcherWorker, OutboxDispatcherWorker>();
@@ -25,5 +25,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork<TDbContext>, UnitOfWork<TDbContext>>();
         services.AddSingleton<IOutboxQueueSemaphoreProvider<TDbContext>, OutboxQueueSemaphoreProvider<TDbContext>>();
         services.AddScoped<IOutboxHandlerInvoker, OutboxHandlerInvoker>();
+        services.AddScoped<IOutboxStoreStatistics<TDbContext>, OutboxStoreStatistics<TDbContext>>();
     }
 }
