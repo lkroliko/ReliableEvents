@@ -24,6 +24,7 @@ internal sealed class HandlerMetadataProvider<TDbContext> : IHandlerMetadataProv
         }
     }
 
+    //TODO optymalizacja gdy event nie ma handlerów
     public IEnumerable<HandlerMetadata> GetHandlersMetadata(object @event) =>
         _handlerMetadatasForEvent.TryGetValue(@event.GetType(), out var handlerMetadatas) ? handlerMetadatas : Enumerable.Empty<HandlerMetadata>();
 }

@@ -1,6 +1,6 @@
 ﻿namespace MrRabbit.ReliableEvents;
 
-public interface IOutboxDispatchErrorHandler
+public interface IOutboxDispatchErrorHandler //TODO queue dispatch
 {
     Task HandleAsync(OutboxDispatchErrorContext context);
 }

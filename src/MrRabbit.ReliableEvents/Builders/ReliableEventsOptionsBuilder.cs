@@ -58,6 +58,9 @@ public class ReliableEventsOptionsBuilder
         return this;
     }
 
+    public ReliableEventsOptionsBuilder AddOutboxEventHandler<TEventHandler>() =>
+        AddOutboxEventHandler(typeof(TEventHandler));
+
     public ReliableEventsOptionsBuilder AddOutboxEventHandler(Type type)
     {
         var interfaceType = type.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IOutboxEventHandler<>));

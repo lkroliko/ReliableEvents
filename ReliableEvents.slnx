@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/MrRabbit.ReliableEvents.Benchmarks/MrRabbit.ReliableEvents.Benchmarks.csproj" Id="bd30e688-938a-4a08-a47e-a29b9c445d75" />
+  </Folder>
   <Folder Name="/docs/">
     <File Path="README.md" />
   </Folder>
