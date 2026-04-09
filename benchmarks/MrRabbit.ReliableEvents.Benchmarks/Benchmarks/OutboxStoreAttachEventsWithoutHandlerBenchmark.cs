@@ -1,13 +1,11 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.DependencyInjection;
-using MrRabbit.ReliableEvents.Attributes;
 using MrRabbit.ReliableEvents.Benchmarks.Common;
-using MrRabbit.ReliableEvents.Builders;
 
 namespace MrRabbit.ReliableEvents.Benchmarks.Benchmarks;
 
 [MemoryDiagnoser]
-public class OutboxStoreAttachEventsBenchmark : BenchmarkBase
+public class OutboxStoreAttachEventsWithoutHandlerBenchmark : BenchmarkBase
 {
     private readonly DatabaseProvider _provider = DatabaseProvider.SQLite;
     private readonly Database _database;
@@ -19,7 +17,7 @@ public class OutboxStoreAttachEventsBenchmark : BenchmarkBase
     [Params(10_000)]
     public int EventCount;
 
-    public OutboxStoreAttachEventsBenchmark()
+    public OutboxStoreAttachEventsWithoutHandlerBenchmark()
     {
         _database = new(_provider);
     }
@@ -57,21 +55,10 @@ public class OutboxStoreAttachEventsBenchmark : BenchmarkBase
         _database.DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 
-    protected override void ConfigureReliableEvents(ReliableEventsOptionsBuilder options)
-    {
-        options.AddOutboxEventHandler<OutboxEventHandler>();
-    }
-
     [Benchmark]
-    public void AttachOutboxEvents()
+    public void AttachOutboxEventsWithoutHandler()
     {
         _reliableEvents!.OutboxStore.AttachEvents(_events, e => e.EventId, e => e.OccurredDate);
-    }
-
-    [EventHandlerQueue(nameof(OutboxEventHandler))]
-    public class OutboxEventHandler : IOutboxEventHandler<OutboxEvent>
-    {
-        public Task HandleAsync(OutboxEvent @event, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     public class OutboxEvent
