@@ -1,6 +1,6 @@
 ﻿namespace MrRabbit.ReliableEvents.EndToEndTests.Common;
 
-internal class TestrOutboxDispatchedHandler : IOutboxDispatchedHandler
+internal class TestrOutboxDispatchedHandler : IOutboxDispatchedQueueHandler
 {
-    public virtual Task HandleAsync(OutboxDispatchedContext context) => Task.CompletedTask;
+    public virtual Task HandleAsync(OutboxDispatchedQueueContext context) => Task.CompletedTask;
 }

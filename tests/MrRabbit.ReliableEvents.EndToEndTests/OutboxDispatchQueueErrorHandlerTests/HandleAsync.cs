@@ -1,11 +1,11 @@
-﻿namespace MrRabbit.ReliableEvents.EndToEndTests.OutboxDispatchErrorHandlerTests;
+﻿namespace MrRabbit.ReliableEvents.EndToEndTests.OutboxDispatchQueueErrorHandlerTests;
 
-[Trait("Category", "OutboxDispatchErrorHandler")]
+[Trait("Category", "OutboxDispatchQueueErrorHandler")]
 public class HandleAsync : ReliableEventsTestBase
 {
     private readonly OutboxEventForQueue1 _event = A.Fixture.Create<OutboxEventForQueue1>();
     private readonly OutboxEventHandlerForQueue1 _handler = Mock.Of<OutboxEventHandlerForQueue1>();
-    private readonly IOutboxDispatchErrorHandler _errroHandler = Mock.Of<IOutboxDispatchErrorHandler>();
+    private readonly IOutboxDispatchQueueErrorHandler _errroHandler = Mock.Of<IOutboxDispatchQueueErrorHandler>();
     private readonly CancellationToken _cancellationToken = CancellationToken.None;
     private readonly Exception _exception = new();
 
@@ -28,7 +28,7 @@ public class HandleAsync : ReliableEventsTestBase
 
         await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue], _cancellationToken);
 
-        Mock.Get(_errroHandler).Verify(h => h.HandleAsync(It.Is<OutboxDispatchErrorContext>(c => c.Queue.Name == TestConsts.Queues.Queue1.Name && c.Exception == _exception)), Times.Once);
+        Mock.Get(_errroHandler).Verify(h => h.HandleAsync(It.Is<OutboxDispatchQueueErrorContext>(c => c.Queue.Name == TestConsts.Queues.Queue1.Name && c.Exception == _exception)), Times.Once);
     }
 
     [Theory]
@@ -40,6 +40,6 @@ public class HandleAsync : ReliableEventsTestBase
 
         await ReliableEvents.OutboxDispatcher.DispatchAsync([TestConsts.Queues.Queue1.Queue], _cancellationToken);
 
-        Mock.Get(_errroHandler).Verify(h => h.HandleAsync(It.IsAny<OutboxDispatchErrorContext>()), Times.Never);
+        Mock.Get(_errroHandler).Verify(h => h.HandleAsync(It.IsAny<OutboxDispatchQueueErrorContext>()), Times.Never);
     }
 }

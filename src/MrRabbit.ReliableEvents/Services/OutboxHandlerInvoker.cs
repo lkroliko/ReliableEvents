@@ -11,14 +11,14 @@ internal class OutboxHandlerInvoker : IOutboxHandlerInvoker
         _serviceProvider = serviceProvider;
     }
 
-    public async Task InvokeDispatchedHandlerAsync(OutboxQueue queue, int dispatchedTasksCount)
+    public async Task InvokeDispatchedQueueHandlerAsync(OutboxQueue queue, int dispatchedTasksCount)
     {
-        var context = new OutboxDispatchedContext()
+        var context = new OutboxDispatchedQueueContext()
         {
             Queue = queue,
             DispatchedTasksCount = dispatchedTasksCount,
         };
-        var hooks = _serviceProvider.GetServices<IOutboxDispatchedHandler>();
+        var hooks = _serviceProvider.GetServices<IOutboxDispatchedQueueHandler>();
         try
         {
             foreach (var hook in hooks)
@@ -26,18 +26,18 @@ internal class OutboxHandlerInvoker : IOutboxHandlerInvoker
         }
         catch (Exception ex)
         {
-            throw new ReliableEventsException($"An error occurred while running '{nameof(IOutboxDispatchedHandler)}'.", ex);
+            throw new ReliableEventsException($"An error occurred while running '{nameof(IOutboxDispatchedQueueHandler)}'.", ex);
         }
     }
 
-    public async Task InvokeDispatchErrorHandlerAsync(DispatchResult result)
+    public async Task InvokeDispatchQueueErrorHandlerAsync(DispatchResult result)
     {
-        var context = new OutboxDispatchErrorContext()
+        var context = new OutboxDispatchQueueErrorContext()
         {
             Queue = result.Queue,
             Exception = result.Exception!,
         };
-        var hooks = _serviceProvider.GetServices<IOutboxDispatchErrorHandler>();
+        var hooks = _serviceProvider.GetServices<IOutboxDispatchQueueErrorHandler>();
         try
         {
             foreach (var hook in hooks)
@@ -45,7 +45,7 @@ internal class OutboxHandlerInvoker : IOutboxHandlerInvoker
         }
         catch (Exception ex)
         {
-            throw new ReliableEventsException($"An exception occurred while handling an '{nameof(IOutboxDispatchErrorHandler)}'.", ex);
+            throw new ReliableEventsException($"An exception occurred while handling an '{nameof(IOutboxDispatchQueueErrorHandler)}'.", ex);
         }
     }
 }

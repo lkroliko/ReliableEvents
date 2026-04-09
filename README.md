@@ -33,7 +33,7 @@ This library implements the **Transactional Outbox Pattern**: events are seriali
 - 🔀 **Named queues** — isolate event processing across independent queues with `[EventHandlerQueue]`
 - 🛡️ **Concurrency control** — per-queue semaphores prevent duplicate processing
 - 📦 **External event deduplication** — optional `EventId` to detect and skip duplicate events received from external systems (e.g. SignalR, webhooks)
-- 🪝 **Dispatch handlers** — plug into the outbox lifecycle with `IOutboxDispatchedHandler` and `IOutboxDispatchErrorHandler`
+- 🪝 **Dispatch handlers** — plug into the outbox lifecycle with `IOutboxDispatchedQueueHandler` and `IOutboxDispatchQueueErrorHandler`
 - 🧩 **Minimal setup** — single `AddReliableEvents<TDbContext>()` call with a fluent builder API
 - 🎯 **Convention-based registration** — auto-discover handlers from assemblies
 
@@ -450,8 +450,8 @@ services.AddReliableEvents<AppDbContext>(options =>
     options.AddOutboxEventHandler(typeof(OrderConfirmedHandler));
 
     // Register dispatch lifecycle handlers
-    options.AddOutboxDispatchedHandler<MyDispatchedHandler>();
-    options.AddOutboxDispatchErrorHandler<MyDispatchErrorHandler>();
+    options.AddOutboxDispatchedQueueHandler<MyDispatchedHandler>();
+    options.AddOutboxDispatchQueueErrorHandler<MyDispatchErrorHandler>();
 });
 ```
 
@@ -487,18 +487,18 @@ public interface IOutboxEventHandler<TEvent>
 }
 ```
 
-#### `IOutboxDispatchedHandler`
+#### `IOutboxDispatchedQueueHandler`
 
-Implement to execute logic **after** a queue has been successfully dispatched (i.e. at least one outbox task was processed). The handler receives an `OutboxDispatchedContext` containing the queue and the number of dispatched tasks. Multiple handlers can be registered — they are invoked sequentially.
+Implement to execute logic **after** a queue has been successfully dispatched (i.e. at least one outbox task was processed). The handler receives an `OutboxDispatchedQueueContext` containing the queue and the number of dispatched tasks. Multiple handlers can be registered — they are invoked sequentially.
 
 ```csharp
-public interface IOutboxDispatchedHandler
+public interface IOutboxDispatchedQueueHandler
 {
-    Task HandleAsync(OutboxDispatchedContext context);
+    Task HandleAsync(OutboxDispatchedQueueContext context);
 }
 ```
 
-**`OutboxDispatchedContext`**
+**`OutboxDispatchedQueueContext`**
 
 | Property | Type | Description |
 |---|---|---|
@@ -508,7 +508,7 @@ public interface IOutboxDispatchedHandler
 **Example:**
 
 ```csharp
-public class LoggingDispatchedHandler : IOutboxDispatchedHandler
+public class LoggingDispatchedHandler : IOutboxDispatchedQueueHandler
 {
     private readonly ILogger<LoggingDispatchedHandler> _logger;
 
@@ -517,7 +517,7 @@ public class LoggingDispatchedHandler : IOutboxDispatchedHandler
         _logger = logger;
     }
 
-    public Task HandleAsync(OutboxDispatchedContext context)
+    public Task HandleAsync(OutboxDispatchedQueueContext context)
     {
         _logger.LogInformation(
             "Queue '{Queue}' dispatched {Count} task(s).",
@@ -527,18 +527,18 @@ public class LoggingDispatchedHandler : IOutboxDispatchedHandler
 }
 ```
 
-#### `IOutboxDispatchErrorHandler`
+#### `IOutboxDispatchQueueErrorHandler`
 
-Implement to execute logic when an `IOutboxEventHandler<T>` throws an exception during dispatch. The handler receives an `OutboxDispatchErrorContext` containing the queue and the exception. This is invoked **before** the `DispatchResult` is returned to the caller. Multiple handlers can be registered — they are invoked sequentially.
+Implement to execute logic when an `IOutboxEventHandler<T>` throws an exception during dispatch. The handler receives an `OutboxDispatchQueueErrorContext` containing the queue and the exception. This is invoked **before** the `DispatchResult` is returned to the caller. Multiple handlers can be registered — they are invoked sequentially.
 
 ```csharp
-public interface IOutboxDispatchErrorHandler
+public interface IOutboxDispatchQueueErrorHandler
 {
-    Task HandleAsync(OutboxDispatchErrorContext context);
+    Task HandleAsync(OutboxDispatchQueueErrorContext context);
 }
 ```
 
-**`OutboxDispatchErrorContext`**
+**`OutboxDispatchQueueErrorContext`**
 
 | Property | Type | Description |
 |---|---|---|
@@ -548,7 +548,7 @@ public interface IOutboxDispatchErrorHandler
 **Example:**
 
 ```csharp
-public class AlertingDispatchErrorHandler : IOutboxDispatchErrorHandler
+public class AlertingDispatchErrorHandler : IOutboxDispatchQueueErrorHandler
 {
     private readonly ILogger<AlertingDispatchErrorHandler> _logger;
 
@@ -557,7 +557,7 @@ public class AlertingDispatchErrorHandler : IOutboxDispatchErrorHandler
         _logger = logger;
     }
 
-    public Task HandleAsync(OutboxDispatchErrorContext context)
+    public Task HandleAsync(OutboxDispatchQueueErrorContext context)
     {
         _logger.LogError(
             context.Exception,
@@ -682,8 +682,8 @@ Dispatch handlers let you plug into the outbox dispatcher lifecycle without modi
 
 | Handler | When it runs | Use cases |
 |---|---|---|
-| `IOutboxDispatchedHandler` | After a queue finishes dispatching (at least one task was processed successfully) | Logging, metrics, triggering downstream workflows |
-| `IOutboxDispatchErrorHandler` | When an outbox event handler throws an exception (before the `DispatchResult` is returned) | Alerting, error logging, dead-letter tracking |
+| `IOutboxDispatchedQueueHandler` | After a queue finishes dispatching (at least one task was processed successfully) | Logging, metrics, triggering downstream workflows |
+| `IOutboxDispatchQueueErrorHandler` | When an outbox event handler throws an exception (before the `DispatchResult` is returned) | Alerting, error logging, dead-letter tracking |
 
 Handlers are registered via the builder API:
 
@@ -691,8 +691,8 @@ Handlers are registered via the builder API:
 services.AddReliableEvents<AppDbContext>(options =>
 {
     options.AddOutboxEventHandlers(typeof(Program).Assembly);
-    options.AddOutboxDispatchedHandler<LoggingDispatchedHandler>();
-    options.AddOutboxDispatchErrorHandler<AlertingDispatchErrorHandler>();
+    options.AddOutboxDispatchedQueueHandler<LoggingDispatchedHandler>();
+    options.AddOutboxDispatchQueueErrorHandler<AlertingDispatchErrorHandler>();
 });
 ```
 

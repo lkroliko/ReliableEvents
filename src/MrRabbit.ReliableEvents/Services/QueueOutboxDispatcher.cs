@@ -34,7 +34,7 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
                 var result = await worker.DispatchAsync(queue, outboxTask, cancellationToken);
                 if (result.IsFailed)
                 {
-                    await _hookInvoker.InvokeDispatchErrorHandlerAsync(result);
+                    await _hookInvoker.InvokeDispatchQueueErrorHandlerAsync(result);
                     return result;
                 }
 
@@ -56,7 +56,7 @@ internal class QueueOutboxDispatcher<TDbContext> : IQueueOutboxDispatcher<TDbCon
         {
             semapthore.Release();
             if (dispatchedTasksCount > 0)
-                await _hookInvoker.InvokeDispatchedHandlerAsync(queue, dispatchedTasksCount);
+                await _hookInvoker.InvokeDispatchedQueueHandlerAsync(queue, dispatchedTasksCount);
         }
 
         return DispatchResult.Ok(queue);

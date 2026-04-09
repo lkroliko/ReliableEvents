@@ -2,6 +2,6 @@
 
 internal interface IOutboxHandlerInvoker
 {
-    Task InvokeDispatchedHandlerAsync(OutboxQueue queue, int dispatchedTasksCount);
-    Task InvokeDispatchErrorHandlerAsync(DispatchResult result);
+    Task InvokeDispatchedQueueHandlerAsync(OutboxQueue queue, int dispatchedTasksCount);
+    Task InvokeDispatchQueueErrorHandlerAsync(DispatchResult result);
 }
