@@ -105,9 +105,8 @@ public class DispatchAsync_Queue : ReliableEventsTestBase
 
             var _ = Task.Run(async () => await reliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, CancellationToken.None)).ConfigureAwait(false);
         }
-        //TODO do werfikacji
-        await Task.Delay(200);
-        ///var result = await reliableEvents.OutboxDispatcher.DispatchAsync(TestConsts.Queues.Queue1.Queue, _cancellationToken);
+
+        await Task.Delay(200, TestContext.Current.CancellationToken);
 
         var outboxTask = DbContext.Set<OutboxTask>().Single();
         outboxTask.IsDispatched.Should().BeTrue();

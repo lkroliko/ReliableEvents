@@ -406,6 +406,7 @@ public class OrderService
 | **Dispatcher** | `IDispatcher` | Scoped | Resolves and invokes all `IEventHandler<T>` implementations for a given set of events in-memory. |
 | **Outbox Store** | `IOutboxStore<TDbContext>` | Scoped | Serializes events and attaches them as `OutboxTask` entities to the current EF Core change tracker. Events are committed with your `SaveChanges` call. |
 | **Outbox Dispatcher** | `IOutboxDispatcher<TDbContext>` | Singleton | Processes all queues in parallel. Each queue is processed sequentially (oldest-first) with per-queue semaphore locking. |
+| **Outbox Store Statistics** | `IOutboxStoreStatistics<TDbContext>` | Scoped | Provides statistics about waiting (not yet dispatched) outbox tasks, grouped by queue. |
 
 ### Event Lifecycle
 
@@ -564,6 +565,59 @@ public class AlertingDispatchErrorHandler : IOutboxDispatchQueueErrorHandler
             "Dispatch failed for queue '{Queue}'.",
             context.Queue.Name);
         return Task.CompletedTask;
+    }
+}
+```
+
+#### `IOutboxStoreStatistics<TDbContext>`
+
+Provides statistics about waiting (not yet dispatched) outbox tasks. Inject this interface to monitor the outbox queue backlog.
+
+```csharp
+public interface IOutboxStoreStatistics<TDbContext> where TDbContext : DbContext
+{
+    Task<WaitingTaskStatistics> GetWaitingTaskStatisticsAsync();
+}
+```
+
+**`WaitingTaskStatistics`**
+
+| Property | Type | Description |
+|---|---|---|
+| `WaitingTasksCount` | `int` | Total number of waiting (not dispatched) outbox tasks across all queues |
+| `Queues` | `IEnumerable<QueueWaitingTaskStatistics>` | Per-queue breakdown of waiting tasks |
+
+> **💡 Note:** `WaitingTaskStatistics` defines an implicit conversion to `int`, returning `WaitingTasksCount`.
+
+**`QueueWaitingTaskStatistics`**
+
+| Property | Type | Description |
+|---|---|---|
+| `Queue` | `OutboxQueue` | The queue |
+| `WaitingTasksCount` | `int` | Number of waiting tasks in this queue |
+
+**Example:**
+
+```csharp
+public class OutboxHealthCheck
+{
+    private readonly IOutboxStoreStatistics<AppDbContext> _statistics;
+
+    public OutboxHealthCheck(IOutboxStoreStatistics<AppDbContext> statistics)
+    {
+        _statistics = statistics;
+    }
+
+    public async Task CheckAsync(CancellationToken ct)
+    {
+        var stats = await _statistics.GetWaitingTaskStatisticsAsync();
+
+        Console.WriteLine($"Total waiting tasks: {stats.WaitingTasksCount}");
+
+        foreach (var queue in stats.Queues)
+        {
+            Console.WriteLine($"  Queue '{queue.Queue.Name}': {queue.WaitingTasksCount} waiting");
+        }
     }
 }
 ```
