@@ -5,6 +5,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>ReliableEvents</PackageId>
+    <FileVersion>1.0.0</FileVersion>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Title>ReliableEvents</Title>
+    <Authors>MrRabbit</Authors>
+    <Description>A lightweight, in-memory event dispatcher and transactional outbox pattern implementation for .NET — guaranteeing reliable domain event delivery with Entity Framework Core. Solves the dual-write problem with at-least-once delivery, named queues, concurrency control, and minimal setup.</Description>
+    <PackageTags>events;outbox;transactional-outbox;domain-events;event-dispatcher;efcore;entity-framework-core;reliable-events;cqrs;ddd;dotnet</PackageTags>
+    <PackageProjectUrl>https://github.com/lkroliko/ReliableEvents</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/lkroliko/ReliableEvents</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -16,7 +30,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="[10.0.0,11.0.0)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Common\Resources\icon.png" Pack="true" PackagePath="" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

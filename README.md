@@ -754,4 +754,4 @@ Multiple handlers of the same type can be registered — they are invoked sequen
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](LICENSE.txt).
