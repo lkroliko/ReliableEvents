@@ -1,1 +1,18 @@
-<Solution />
+<Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/MrRabbit.ReliableEvents.Benchmarks/MrRabbit.ReliableEvents.Benchmarks.csproj" Id="bd30e688-938a-4a08-a47e-a29b9c445d75" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/MrRabbit.ReliableEvents/MrRabbit.ReliableEvents.csproj" Id="9978e003-f55c-432d-89af-2fe18af457e9" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MrRabbit.ReliableEvents.EndToEndTests/MrRabbit.ReliableEvents.EndToEndTests.csproj" Id="6ad6c0f6-4323-4680-b2da-66a70938e0da" />
+    <Project Path="tests/MrRabbit.ReliableEvents.UnitTests/MrRabbit.ReliableEvents.UnitTests.csproj" Id="45a80110-a0a2-4c2b-a0f3-25028af9141a" />
+  </Folder>
+</Solution>
