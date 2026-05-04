@@ -1,7 +1,7 @@
 <p align="center">
   <h1 align="center">ReliableEvents</h1>
   <p align="center">
-  <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10-512bd4?logo=dotnet" alt=".NET 10"></a>
+  <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10-512bd4" alt=".NET 10"></a>
   <a href="https://www.nuget.org/packages/ReliableEvents"><img src="https://img.shields.io/nuget/v/ReliableEvents?logo=nuget&color=004880" alt="NuGet"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
 </p>
