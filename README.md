@@ -17,6 +17,7 @@
   <a href="#ddd-integration">DDD Integration</a> •
   <a href="#architecture">Architecture</a> •
   <a href="#api-reference">API Reference</a> •
+  <a href="CHANGELOG.md">Changelog</a> •
   <a href="#license">License</a>
 </p>
 
