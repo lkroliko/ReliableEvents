@@ -9,18 +9,21 @@ internal sealed class HandlerMetadataProvider<TDbContext> : IHandlerMetadataProv
 
     public HandlerMetadataProvider(IEnumerable<Type> outboxEventHandlerTypes)
     {
-        foreach (var type in outboxEventHandlerTypes)
+        foreach (var type in outboxEventHandlerTypes.Distinct())
         {
             var queueAttribute = type.GetCustomAttribute<EventHandlerQueueAttribute>();
             if (queueAttribute is null)
                 throw new InvalidOperationException($"Integration event handler {type.FullName} must have '{nameof(EventHandlerQueueAttribute)}'.");
 
-            var integrationEventType = type.GetInterfaces().FirstOrDefault(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IOutboxEventHandler<>))?.GetGenericArguments().FirstOrDefault();
+            var integrationEventTypes = type.GetInterfaces().Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IOutboxEventHandler<>)).Select(x => x.GetGenericArguments().First()).ToArray();
             var handlerMetadata = new HandlerMetadata() { Type = type, Queue = queueAttribute.Queue };
-            if (_handlerMetadatasForEvent.TryGetValue(integrationEventType!, out var handlerMetadatasForIntegrationEvent))
-                handlerMetadatasForIntegrationEvent.Add(handlerMetadata);
-            else
-                _handlerMetadatasForEvent.Add(integrationEventType!, new() { handlerMetadata });
+            foreach (var integrationEventType in integrationEventTypes)
+            {
+                if (_handlerMetadatasForEvent.TryGetValue(integrationEventType, out var handlerMetadatasForIntegrationEvent))
+                    handlerMetadatasForIntegrationEvent.Add(handlerMetadata);
+                else
+                    _handlerMetadatasForEvent.Add(integrationEventType, new() { handlerMetadata });
+            }
         }
     }
 
