@@ -8,7 +8,7 @@
     <FileVersion>1.0.1</FileVersion>
     <Version>1.0.1</Version>
     <AssemblyVersion>1.0.1</AssemblyVersion>
-    <PackageVersion>1.0.1-preview1</PackageVersion>
+    <PackageVersion>1.0.1</PackageVersion>
     <Title>MrRabbit.ReliableEvents</Title>
     <Authors>MrRabbit</Authors>
     <Description>A lightweight, in-memory event dispatcher and transactional outbox pattern implementation for .NET — guaranteeing reliable domain event delivery with Entity Framework Core. Solves the dual-write problem with at-least-once delivery, named queues, concurrency control, and minimal setup.</Description>
