@@ -1,6 +1,6 @@
 ﻿namespace MrRabbit.ReliableEvents;
 
-public sealed class OutboxTask
+public class OutboxTask
 {
     public required Guid Id { get; init; }
     public required string QueueName { get; init; }
